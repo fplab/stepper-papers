@@ -1,0 +1,67 @@
+Debugger has been one of the most important tools that students and programmer
+use to learn the behavior of their programs. Well-established debuggers such as
+GDB, LLDB, and Visual Studio Debugger have been widely used in industry and
+academia. These debuggers provide rich set of tools for user to inspect and even
+change various aspects of a running program, such as memory, variables,
+and call stacks. However, they also suffers from several limitations.
+
+\begin{enumerate}
+  \item They are tailored for imperative languages like C or C++. They are not
+    well-suited for functional languages, where memory is usually managed by
+    GC and never directly manipulated by the programmer.
+  \item Many of them support stepping in and stepping over instructions. However,
+    these two instructions can be tedious to use when the program is large and
+    complex. The user has to step through many instructions that are not relevant
+    to the current task.
+  \item They are not well-suited for teaching. They are designed for professional
+    programmers who are already familiar with the language and the program they
+    are debugging. They are not well-suited for beginners who are learning the
+    language and the program.
+\end{enumerate}
+
+Therefore, we want to develop a new kind of debugger that tailored for
+functional languages and is well-suited for teaching in Hazel. Hazel is a pure
+functional language that supports working with incomplete programs. It is used
+in a upper-level programming languages course where we are teaching
+substitution-based equational semantics -- we want the steps to show up as
+justified proof steps, to mirror what we have previously done in lectures and
+written assignments.
+
+\TODO{(example here of a simple equational stepping proof)}
+
+One of the main challenges in using such a debugger in lecturing is that it is
+often tedious to step through a program. Students has to witness many boring
+instructions that are not relevant to the current task, or that they already
+well understand. Those instructions will litter the proof and obscure the key
+idea. Our approach is to develop a scoped filter system that allows us to write patterns
+that will be skipped or paused. For example,
+
+\TODO{(more sophisticated example where you show side-by-side the unfiltered and
+filtered version of the same stepping sequence) fib, foldright, map}
+
+Our scoped filter system allows the user to specify sub-expressions whose full
+evaluation they are not interested in, sub-expressions whose full evaluation
+they are interested in, specific steps they are not interested in, and specific
+steps they are interested in.
+
+\TODO{want to be able to step programs with holes, including error holes:
+abstract foldright vs foldleft}
+
+% Prior work summary: what have people tried to do to handle this challenge in the past? why is that not quite enough
+
+We have made the following contributes in the paper:
+\begin{itemize}
+  \item We have developed the hazel stepper and a companion scoped filter system
+    that allows the user to specify sub-expressions whose full evaluation they
+    are not interested in, sub-expressions whose full evaluation they are
+    interested in, specific steps they are not interested in, and specific steps
+    they are interested in.
+  \item We have deployed the hazel stepper and the scoped filter system in
+    lecture and to students. We have conducted qualitative and quantitative
+    evaluation of the system.
+  \item We have formalized the filter semantics and proved the meta-theory
+    theorems of the hazel filter system so that we can be confident that the
+    filter system have desired properties.
+\end{itemize}
+
+% - developed the hazel stepper and filter system, implemented it, deployed it in lecture (qualitative evaluation), deployed it to students (qualitative + quantitative evaluation), formalized the filter semantics, metatheory

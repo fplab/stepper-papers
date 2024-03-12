@@ -1,0 +1,504 @@
+\subsection{Definitions}
+
+\fbox{\(\DefAct a\)} Action \(a\) of a filter
+\[
+  \DefAct a \Coloneqq \FASkip \mid \FAStep
+\]
+
+\fbox{\(\DefGas g\)} Gas \(g\) of a filter.
+\[
+  \DefGas g \Coloneqq \FGOne \mid \FGAll
+\]
+
+\fbox{\(\DefExp d\)} Expression \(d\).
+\[
+  \DefExp d \Coloneqq x \mid d(d) \mid \Lam{x}{d} \mid d + d \mid \Nat{n} \mid \Filter{p}{a}{g}{d} \mid \Residue{a}{g}{l}{d}
+\]
+
+% \fbox{\(\DefVal d\)} Value \(v\).
+% \[
+%   \DefVal v \Coloneqq \Lam{x}{d} \mid \Nat{n}
+% \]
+
+% \mck{I added a value thing here but we should probably actually define it as a judgement instead.}
+
+\fbox{\(\DefCtx \mathcal{E}\)} Context \(\mathcal{E}\).
+\[
+  \DefCtx \mathcal{E}
+  = \FCMark
+  \mid \mathcal{E}(d)
+  \mid d(\mathcal{E})
+  \mid \mathcal{E} + d
+  \mid d + \mathcal{E}
+  \mid \Filter{p}{a}{g}{l}{\mathcal{E}}
+  \mid \Residue{a}{g}{l}{\mathcal{E}}
+\]
+
+% \mck{Maybe replace $\Residue{a}{g}{l}{\mathcal{E}}$ with $\Residue{a}{\FGAll}{l}{\mathcal{E}}$ because only $\FGAll$ is possible?}
+
+\fbox{\(\DefPat p\)} Pattern \(p\).
+\[
+  \DefPat p \Coloneqq \$e \mid \$v \mid x \mid p(p) \mid \Lam{x}{d} \mid p + p \mid \Nat{n}
+\]
+
+% \mck{The $\lambda \$x. $ form actually isn't necessary because we use alpha-equivalence later.}
+
+\fbox{\(\DefFilter f\)} Filter \(f\).
+\[
+  \DefFilter f = (p, a, g)
+\]
+
+\subsection{Dynamics}
+
+\fbox{\(\Value e\)} Expression \(e\) is a value.
+\begin{mathpar}
+  \inferrule[V-Lam]{
+  }{
+    \Value{\Lam{x}{d}}
+  } \qquad
+  \inferrule[V-Nat]{
+  }{
+    \Value{\Nat{n}}
+  }
+\end{mathpar}
+
+\fbox{\([x / v] e = e'\)} \(e'\) can be obtained by substitution of \(x\) for
+\(v\) in \(e\).
+\[
+  \begin{aligned}
+    [x / v] x &= v \\
+    [x / v] y &= y && \text{if } x \neq y \\
+    [x / v] (e_1(e_2)) &= ([x / v] e_1)([x / v] e_2) \\
+    [x / v] \Lam{y}{\tau}{e} &= \Lam{y}{\tau}{[x / v] e} && \text{if } x \neq y \\
+    [x / v] \Lam{y}{\tau}{e} &= \Lam{y}{\tau}{e} && \text{if } x = y \\
+  \end{aligned}
+\]
+\hxf{Do we really need a judgement for substitution?}
+% \begin{mathpar}
+%   \inferrule[S-Var-Eq]{
+%   }{
+%     [x / v] x = v
+%   } \qquad
+%   \inferrule[S-Var-Neq]{
+%     x \neq y
+%   }{
+%     [x / v] y = y
+%   } \\
+%   \inferrule[S-Ap]{
+%   }{
+%     [x / v] (e_1(e_2)) = ([x / v] e_1)([x / v] e_2)
+%   } \\
+%   \inferrule[S-Lam-Eq]{
+%   }{
+%     [x / v] \Lam{x}{\tau}{e} = \Lam{x}{\tau}{e}
+%   } \qquad
+%   \inferrule[S-Lam-Neq]{
+%     x \neq y
+%   }{
+%     [x / v] \Lam{y}{\tau}{e} = \Lam{y}{\tau}{[x / v] e}
+%   } \\
+% \end{mathpar}
+
+\mck{It might be clearer if we write out a separate recompose judgement too. I think decompose and recompose behave differently especially with regard to do statements}
+
+\fbox{\(\Decompose{d}{\mathcal{E}}{d'}\)} Expression \(d\) can be obtained by putting expression \(d'\) into the mark of \(\mathcal{E}\).
+\begin{mathpar}
+  \inferrule[D-Var]{
+  }{
+    \Decompose{x}{\FCMark}{x}
+  } \\
+  \inferrule[D-Residue-I]{
+    \Decompose{e}{\mathcal{E}}{e'}
+  }{
+    \Decompose{\Residue{a}{g}{l}{e}}{\mathcal{E}}{\Residue{a}{g}{l}{e'}}
+  } \\
+  \inferrule[D-Residue-E]{
+    \Value{v}
+  }{
+    \Decompose{\Residue{a}{g}{l}{v}}{\circ}{\Residue{a}{g}{l}{v}}
+  } \\
+  \inferrule[D-Filter-I]{
+    \Decompose{e}{\mathcal{E}}{e'}
+  }{
+    \Decompose{\Filter{p}{a}{g}{e}}{\mathcal{E}}{\Filter{p}{a}{g}{e'}}
+  } \\
+  \inferrule[D-Filter-E]{
+    \Value{v}
+  }{
+    \Decompose{\Residue{p}{a}{g}{v}}{\circ}{\Residue{p}{a}{g}{v}}
+  } \\
+  \inferrule[D-Ap-L]{
+    \Decompose{d_1}{\mathcal{E}_1}{d_1'}
+  }{
+    \Decompose{d_1(d_2)}{\mathcal{E}_1(d_2)}{d_1'}
+  } \qquad
+  \inferrule[D-Ap-R]{
+    \Value{d_1} \\
+    \Decompose{d_2}{\mathcal{E}_2}{d_2'}
+  }{
+    \Decompose{d_1(d_2)}{d_1(\mathcal{E}_2)}{d_2'}
+  } \qquad
+  \inferrule[D-Ap-E]{
+    \Value{e_1} \\
+    \Value{e_2}
+  }{
+    \Decompose{e_1(e_2)}{\circ}{e_1(e_2)}
+  } \\
+  \inferrule[D-Add-L]{
+    \Decompose{d_1}{\mathcal{E}_1}{d_1'}
+  }{
+    \Decompose{d_1 + d_2}{\mathcal{E}_1 + d_2}{d_1'}
+  } \qquad
+  \inferrule[D-Add-R]{
+    \Value{d_1} \\
+    \Decompose{d_2}{\mathcal{E}_2}{d_2'}
+  }{
+    \Decompose{d_1 + d_2}{d_1 + \mathcal{E}_2}{d_2'}
+  } \qquad
+  \inferrule[D-Add-E]{
+    \Value{e_1} \\
+    \Value{e_2}
+  }{
+    \Decompose{e_1 + e_2}{\circ}{e_1 + e_2}
+  }
+\end{mathpar}
+\mck{D-Filter-E rule does not have any filters in it}
+
+\mck{The last four rules seem to specify an evaluation order - is this desired behaviour? I thought we were going to mention the nondeterminism somewhere in the text}
+
+\mck{Todo: remove the unused `output' g from the above - I think we can also remove the `input` g too?}
+
+\fbox{\(\Compose{d}{\mathcal{E}}{d'}\)} Expression \(d\) can be obtained by putting expression \(d'\) into the mark of \(\mathcal{E}\).
+\begin{mathpar}
+  \inferrule[C-Top]{
+    \ 
+  }{
+    \Compose{e}{\circ}{e}
+  } \qquad
+  \inferrule[C-Ap-L]{
+    \Compose{e_l}{\mathcal{E}}{e}
+  }{
+    \Compose{e_l(e_r)}{\mathcal{E}(e_r)}{e}
+  } \qquad
+  \inferrule[C-Ap-R]{
+    \Compose{e_r}{\mathcal{E}}{e}
+  }{
+    \Compose{e_l(e_r)}{e_l(\mathcal{E})}{e}
+  } \\
+  \inferrule[C-Add-L]{
+    \Compose{e_l}{\mathcal{E}}{e}
+  }{
+    \Compose{e_l + e_r}{\mathcal{E} + e_r}{e}
+  } \qquad
+  \inferrule[C-Add-R]{
+    \Compose{e_r}{\mathcal{E}}{e}
+  }{
+    \Compose{e_l + e_r}{e_l + \mathcal{E}}{e}
+  } \\
+  \inferrule[C-Filter]{
+    \Compose{e'}{\mathcal{E}}{e}
+  }{
+    \Compose{\Filter{p}{a}{g}{e'}}{\Filter{p}{a}{g}{\mathcal{E}}}{e}
+  } \\
+  \inferrule[C-Residue]{
+    \Compose{e'}{\mathcal{E}}{e}
+  }{
+    \Compose{\Residue{a}{g}{l}{e'}}{\Residue{a}{g}{l}{\mathcal{E}}}{e}
+  }
+\end{mathpar}
+
+\fbox{\(e_1 \equiv_\alpha e_2\)} \(e_1\) is alpha-equivalent to \(e_2\).
+\begin{mathpar}
+  \inferrule[\(\alpha\)-Var]{
+  }{
+    x \equiv_\alpha x
+  } \qquad
+  \inferrule[\(\alpha\)-Lam]{
+    e_1 \equiv_\alpha [x_2/x_1](e_2)
+  }{
+    \Lam{x_1}{\tau_1}{e_1} \equiv_\alpha \Lam{x_2}{\tau_2}{e_2}
+  } \\
+  \inferrule[\(\alpha\)-Ap]{
+    e_1 \equiv_\alpha e_3 \\
+    e_2 \equiv_\alpha e_4
+  }{
+    e_1(e_2) \equiv_\alpha e_3(e_4)
+  } \qquad
+  \inferrule[\(\alpha\)-Add]{
+    e_1 \equiv_\alpha e_3 \\
+    e_2 \equiv_\alpha e_4
+  }{
+    e_1 + e_2 \equiv_\alpha e_3 + e_4
+  } \\
+  \inferrule[\(\alpha\)-Filter]{
+    e_1 \equiv_\alpha e_2
+  }{
+    \Filter{p}{a}{g}{e_1} \equiv_\alpha \Filter{p}{a}{g}{e_2}
+  } \\
+  \inferrule[\(\alpha\)-Residue]{
+    e_1 \equiv_\alpha e_2
+  }{
+    \Residue{a}{g}{l}{e_1} \equiv_\alpha \Residue{a}{g}{l}{e_2}
+  }
+\end{mathpar}
+
+\fbox{\(\Strip{e} = {e'}\)} Strip expression \(e\) to get expression \(e'\).
+\[
+  \begin{aligned}
+    \Strip{x} &= x \\
+    \Strip{\Lam{x}{\tau}{e}} &= \Lam{x}{\tau}{\Strip{e}} \\
+    \Strip{e_1(e_2)} &= (\Strip{e_1})(\Strip{e_2}) \\
+    \Strip{\Nat{n}} &= \Strip{\Nat{b}} \\
+    \Strip{e_1 + e_2} &= (\Strip{e_1}) + (\Strip{e_2}) \\
+    \Strip{\Filter{p}{a}{g}{e}} &= \Strip{e} \\
+    \Strip{\Residue{a}{g}{l}{e}} &= \Strip{e}
+  \end{aligned}
+\]
+
+\fbox{\(\Matches{p}{d}\)} means that pattern \(p\) matches expression \(d\).
+\begin{mathpar}
+  \inferrule[M-All]{\ }{
+    \Matches{\$e}{d}
+  } \qquad
+  \inferrule[M-Val]{\Value{v}}{
+    \Matches{\$v}{v}
+  } \\
+  \inferrule[M-Nat]{
+    m = n
+  }{
+    \Matches{\Nat{m}}{\Nat{n}}
+  }\qquad
+  \inferrule[M-Lam]{
+    \Lam{x}{\tau_p}{e_p} \equiv_{\alpha} \Lam{y}{\tau_e}{e_e}
+  }{
+    \Matches{\Lam{x}{\tau_p}{e_p}}{\Lam{y}{\tau_e}{e_e}}
+  } \\ 
+  \inferrule[M-Ap]{
+    \Matches{p_1}{d_1} \\
+    \Matches{p_2}{d_2}
+  }{
+    \Matches{p_1(p_2)}{d_1(d_2)}
+  } \qquad
+  \inferrule[M-Add]{
+    \Matches{p_1}{d_1} \\
+    \Matches{p_2}{d_2}
+  }{
+    \Matches{p_1 + p_2}{d_1 + d_2}
+  } \qquad
+\end{mathpar}
+
+\mck{M-Lam doesn't allow \$e inside function bodies - is this intentional?}
+
+\fbox{\(\FInstruct{(p, a, g, l)}{d}{d'}\)} \(d\) is dynamically instructed to \(d'\).
+\begin{mathpar}
+  \inferrule[FI-V]{
+    \Value{d}
+  }{
+    \FInstruct{(p, a, g, l)}{d}{d}
+  } \\
+  \inferrule[FI-Var-Y]{
+    \FPatMatchesExp{p}{x}
+  }{
+    \FInstruct{(p, a, g, l)}{x}{\Residue{a}{g}{l}{x}}
+  } \qquad
+  \inferrule[FI-Var-N]{
+    \FPatNotMatchesExp{p}{x}
+  }{
+    \FInstruct{(p, a, g, l)}{x}{x}
+  } \\
+  \inferrule[FI-I]{
+    \FInstruct{(p_0, a_0, g_0, l_0)}{d_0}{d} \\
+    \FInstruct{(p, a, g, l_0 + 1)}{d}{d'}
+  }{
+    \FInstruct{(p_0, a_0, g_0, l_0)}{\Filter{p}{a}{g}{d_0}}{\Filter{p}{a}{g}{d'}}
+  } \\
+  \inferrule[FI-T]{
+    \FInstruct{(p_0, a_0, g_0, l_0)}{d_0}{d} \\
+  }{
+    \FInstruct{(p_0, a_0, g_0, l_0)}{\Residue{a}{g}{l}{d_0}}{\Residue{a}{g}{l}{d'}}
+  } \\
+  \inferrule[FI-Ap-Y]{
+    \FInstruct{(p, a, g, l)}{d_1}{d_1'} \\
+    \FInstruct{(p, a, g, l)}{d_2}{d_2'} \\
+    \FPatMatchesExp{p}{d_1(d_2)}
+  }{
+    \FInstruct{(p, a, g, l)}{d_1(d_2)}{\Residue{a}{g}{l}{d_1'(d_2')}}
+  } \\
+  \inferrule[FI-Ap-N]{
+    \FInstruct{(p, a, g, l)}{d_1}{d_1'} \\
+    \FInstruct{(p, a, g, l)}{d_2}{d_2'} \\
+    \FPatNotMatchesExp{p}{d_1(d_2)}
+  }{
+    \FInstruct{(p, a, g, l)}{d_1(d_2)}{d_1'(d_2')}
+  } \\
+  \inferrule[FI-Add-Y]{
+    \FInstruct{(p, a, g, l)}{d_1}{d_1'} \\
+    \FInstruct{(p, a, g, l)}{d_2}{d_2'} \\
+    \FPatMatchesExp{p}{d_1 + d_2}
+  }{
+    \FInstruct{(p, a, g, l)}{d_1(d_2)}{\Residue{a}{g}{l}{d_1' + d_2'}}
+  } \\
+  \inferrule[FI-Add-N]{
+    \FInstruct{(p, a, g, l)}{d_1}{d_1'} \\
+    \FInstruct{(p, a, g, l)}{d_2}{d_2'} \\
+    \FPatNotMatchesExp{p}{d_1 + d_2}
+  }{
+    \FInstruct{(p, a, g, l)}{d_1(d_2)}{d_1' + d_2'}
+  }
+\end{mathpar}
+
+\mck{I think there's some preservation of priority property to prove here, since the numbers are re-generated on every pass.}
+
+\mck{This instrumentation will regenerate the do statements on every pass - I guess it doesn't cause problems but it would be nice if it didn't?}
+
+\fbox{\(\Analyze{(a, l)}{\mathcal{E}}{\mathcal{E}'}{a'}\)} Under the filter environment of \((a, l)\), the context \(\mathcal{E}\) is transitioned to \(\mathcal{E}'\) and the action \(a'\) is returned.
+\begin{mathpar}
+  \inferrule[A-Var]{
+  }{
+    \Analyze{(a, l)}{\circ}{\circ}{a}
+  } \\
+  \inferrule[A-Ap-L]{
+    \Analyze{(a, l)}{\mathcal{E}_1}{\mathcal{E}_1'}{a'}
+  }{
+    \Analyze{(a, l)}{\mathcal{E}_1(d)}{\mathcal{E}_1'(d)}{a'}
+  } \qquad
+  \inferrule[A-Ap-R]{
+    \Analyze{(a, l)}{\mathcal{E}_2}{\mathcal{E}_2'}{a'}
+  }{
+    \Analyze{(a, l)}{d_1(\mathcal{E}_2)}{d_1(\mathcal{E}_2')}{a'}
+  } \\
+  \inferrule[A-Add-L]{
+    \Analyze{(a, l)}{\mathcal{E}_1}{\mathcal{E}_1'}{a'}
+  }{
+    \Analyze{(a, l)}{\mathcal{E}_1 + d}{\mathcal{E}_1' + d}{a'}
+  } \qquad
+  \inferrule[A-Add-R]{
+    \Analyze{(a, l)}{\mathcal{E}_2}{\mathcal{E}_2'}{a'}
+  }{
+    \Analyze{(a, l)}{d_1 + \mathcal{E}_2}{d_1 + \mathcal{E}_2'}{a'}
+  } \\
+  \inferrule[A-Filter]{
+    \Analyze{(a, l)}{\mathcal{E}}{\mathcal{E}'}{a'}
+  }{
+    \Analyze{(a, l)}{\Filter{p}{a}{g}{\mathcal{E}}}{\Filter{p}{a}{g}{\mathcal{E}'}}{a'}
+  } \\
+  \inferrule[A-Residue-One-Old]{
+    l \le l_0 \\
+    \Analyze{(a_0, l_0)}{\mathcal{E}}{\mathcal{E}'}{a'}
+  }{
+    \Analyze{(a_0, l_0)}{\Residue{a}{\FGOne}{l}{\mathcal{E}}}{\Residue{a}{\FGOne}{l}{\mathcal{E}'}}{a'}
+  } \\
+  \inferrule[A-Residue-One-New]{
+    l > l_0 \\
+    \Analyze{(a, l)}{\mathcal{E}}{\mathcal{E}'}{a'}
+  }{
+    \Analyze{(a_0, l_0)}{\Residue{a}{\FGOne}{l}{\mathcal{E}}}{\Residue{a}{\FGOne}{l}{\mathcal{E}'}}{a'}
+  } \\
+  \inferrule[A-Residue-All-Old]{
+    l \le l_0 \\
+    \Analyze{(a_0, l_0)}{\mathcal{E}}{\mathcal{E}'}{a'}
+  }{
+    \Analyze{(a_0, l_0)}{\Residue{a}{\FGAll}{l}{\mathcal{E}}}{\Residue{a}{\FGAll}{l}{\mathcal{E}'}}{a'}
+  } \\
+  \inferrule[A-Residue-All-New]{
+    l > l_0 \\
+    \Analyze{(a, l)}{\mathcal{E}}{\mathcal{E}'}{a'}
+  }{
+    \Analyze{(a_0, l_0)}{\Residue{a}{\FGAll}{l}{\mathcal{E}}}{\Residue{a}{\FGAll}{l}{\mathcal{E}'}}{a'}
+  }
+\end{mathpar}
+
+\fbox{\(\FTrans{d}{d'}\)} \(d\) takes an transition to \(d'\).
+\begin{mathpar}
+  \inferrule[FTLam]{
+    \Value{d_2}
+  }{
+    \FTrans{\Lam{x}{d_1}(d_2)}{\FSubst{d_2}{x}{d_1}}
+  } \\
+  \inferrule[FTNat]{
+    n_1 + n_2 = n
+  }{
+    \FTrans{\Nat{n_1} + \Nat{n_2}}{\Nat{n}}
+  } \\
+  \text{\mck{Is FLRes-T redundant since we're using evaluation contexts?}}\\
+  \inferrule[FLRes-T]{
+    \FTrans{d}{d'}
+  }{
+    \FTrans{\Residue{a}{g}{d}}{\Residue{a}{g}{d'}}
+  } \\
+  \inferrule[\textcolor{red}{FLRes-Inst}]{
+    \Value{v}
+  }{
+    \FTrans{\Residue{a}{g}{l}{d}}{v}
+  } \qquad
+  \inferrule[\textcolor{red}{FLRes-Filter}]{
+    \Value{v}
+  }{
+    \FTrans{\Filter{a}{g}{d}}{v}
+  }
+\end{mathpar}
+
+\mck{ok yeah it would be nice to have a progress property here but I guess we do need types for that...}
+
+\fbox{\(\FStep{(a, g)}{d}{d'}\)} Expression \(d\) steps to expression \(d'\).
+\begin{mathpar}
+  \inferrule[FS-Step]{
+    \FInstruct{(a, g, 0)}{d}{d_i} \\
+    \Decompose{d_i}{\mathcal{E}}{d_0} \\
+    \FTrans{d_0}{d_0'} \\
+    \Compose{d'}{\mathcal{E}}{d_0'}
+  }{
+    \FStep{(p, a, g)}{d}{d'}
+  } \\
+  \inferrule[FS-Skip]{
+    \FInstruct{(a, g, 0)}{d}{d_i} \\
+    \Decompose{d_i}{\mathcal{E}}{d_0} \\
+    \FTrans{d_0}{d_0'} \\
+    \Compose{d'}{\mathcal{E}}{d_0'} \\
+    \FStep{(a, g)}{d'}{d''}
+  }{
+    \FStep{(a, g)}{d}{d''}
+  }
+\end{mathpar}
+
+\mck{Does this work with 0-step evaluations e.g. skip \$e in 1 + 2 + 3}
+
+\TODO{Properties}
+\\\\
+Conjecture: Idempotence of Instrumentation (Instrumenting twice should have the same effect as instrumenting once)
+
+$\FInstruct{(p, a, g, l)}{d}{d'} \Rightarrow \FInstruct{(p, a, g, l)}{d'}{d''} \Rightarrow d' = d''$
+
+\mck{This conjecture is actually not true, because instrumentation always adds more do statements, even if they're already there.}
+\\\\
+Conjecture : Determinism of steps
+
+$\FStep{(a, g)}{d}{d'} \Rightarrow \FStep{(a, g)}{d}{d''} \Rightarrow d' = d''$
+
+\mck{I think this holds in this calculus, but not in Hazel itself.}
+\\\\
+Conjecture(Unchanging Priorities)
+
+???
+
+\mck{Since priorities are always re-numbered, we want some sort of conjecture that they remain the same. We could even possibly use this to avoid duplication of `do's?}
+\\\\
+Conjecture(Correctness)
+
+
+
+
+\subsection{Statics}
+
+\TODO{Get filter a simple type system like STLC}
+
+\TODO{Gas is not useful in return}
+
+\TODO{Better notation for do's statements}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

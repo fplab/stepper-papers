@@ -1,0 +1,110 @@
+\begin{prooftree}
+  \hypo{\mathcal{F} \fmatches_{p} d \entails k}
+  \hypo{f' \smatches d}
+  \hypo{\mathcal{F'} = (f', k', p') \cup \mathcal{F}}
+  \hypo{p' > p}
+  \infer4[]{
+    \mathcal{F'} \fmatches_{p'} d \entails k'
+  }
+\end{prooftree}
+
+\begin{prooftree}
+  \hypo{\mathcal{F} \fmatches_{p} d \entails k}
+  \hypo{f' \not\smatches d}
+  \hypo{\mathcal{F'} = (f', k', p') \cup \mathcal{F}}
+  \infer3[]{
+    \mathcal{F'} \fmatches_{p} d \entails k
+  }
+\end{prooftree}
+
+\begin{prooftree}
+  \hypo{\mathcal{F} \fmatches_{p} d \entails k}
+  \infer1[]{
+    \mathcal{F} \matches_{p} \circ \{ d \} \rightsquigarrow \circ \{ d \} \entails (k, p)
+  }
+\end{prooftree}
+
+\begin{prooftree}
+  \hypo{\mathcal{F} \cup \{ (f, k, \max_{p} \mathcal{F} + 1) \} \matches_{p} c \{ d \} \rightsquigarrow c' \{ d' \} \entails (k', p')}
+  \infer1[]{
+    \mathcal{F} \matches_{p} (\filter (f, k) ~\mathsf{in}~ c) \{ d \} \rightsquigarrow (\filter (f, k) ~\mathsf{in}~ c') \{ d' \} \entails (k', p')
+  }
+\end{prooftree}
+
+\begin{prooftree}
+  \hypo{\mathcal{F} \matches_{p} c \{ d \} \rightsquigarrow c' \{ d' \} \entails (k', p)}
+  \infer1[]{
+    \mathcal{F} \matches_{p} c \{ d \} \rightsquigarrow (\instr (k', p) ~\mathsf{in}~ c \{ d \})
+  }
+\end{prooftree}
+
+\begin{prooftree}
+  \hypo{\mathcal{F} \cup \{ (\_, k, p_1) \} \matches_{p} c \{ d \} \rightsquigarrow c' \{ d' \} \entails (k', p')}
+  \infer1[]{
+    \mathcal{F} \matches_{p_0} (\instr (k, p_1) ~\mathsf{in}~ c \{ d \}) \rightsquigarrow c' \{ d' \} \entails (k', p')
+  }
+\end{prooftree}
+
+\begin{prooftree}
+  \hypo{
+    d_0 \longrightarrow d_1
+  }
+  \hypo{
+    d_1 = c \{ d \}
+  }
+  \hypo{
+    \varnothing \matches_{\_} c \{ d \} \rightsquigarrow c' \{ d' \} \entails (\askip, p')
+  }
+  \hypo{
+    d_2 = c' \{ d' \}
+  }
+  \infer4[]{
+    d_0 \longrightarrow d_2
+  }
+\end{prooftree}
+
+\begin{prooftree}
+  \hypo{\mathcal{F} \cup \{ (f_f, k_f, (\max_p \mathcal{F}) + 1) \}, p_b, a_b, k_b \matches E \{ d \} \rightsquigarrow E' \{ d \} \produces p_r, a_r, k_r}
+  \infer1[]{
+    \mathcal{F}, p_b, a_b, k_b \matches Filter(f_f, a_f, k_f, E \{ d \}) \rightsquigarrow Filter(f_f, a_f, k_f, E') \{ d' \} \produces p_r, a_r, k_r
+  }
+\end{prooftree}
+
+The following two rules means that when a filter matches current \(E\{d\}\) with a
+\(All\) count value, we should insert a \(Residue\) filter around the expression
+to keep the life time of the filter a bit longer.
+
+\begin{equation}
+  \begin{prooftree}
+    \hypo{\mathcal{F}, p_b, a_b, k_b \fmatches E \{ d \} \fproduces p_m, a_m, k_m}
+    \hypo{\mathcal{F}, p_m, a_m, k_m \matches E \{ d \} \rightsquigarrow E' \{ d \} \produces p_r, a_r, k_r}
+    \infer2[]{\mathcal{F}, p_b, a_b, k_b \matches E(d_0) \{ d \} \rightsquigarrow E'(d_0) \{ d \} \produces p_r, a_r, k_r}
+  \end{prooftree}
+\end{equation}
+
+\begin{equation}
+  \begin{prooftree}
+    \hypo{\mathcal{F}, p_b, a_b, k_b \fmatches E \{ d \} \fproduces p_m, a_m, All}
+    \hypo{\mathcal{F}, p_m, a_m, All \matches E \{ d \} \rightsquigarrow E' \{ d \} \produces p_m, a_m, All}
+    \hypo{p_m > p_b}
+    \infer3[]{\mathcal{F}, p_b, a_b, k_b \matches E \{ d \} \rightsquigarrow Residue(p_m, p_a, E') \{ d \} \produces p_r, a_r, k_r}
+  \end{prooftree}
+\end{equation}
+
+If the residue filter does not match anything in the subtree, we can remove it.
+
+\begin{equation}
+  \begin{prooftree}
+    \hypo{\mathcal{F}, p_f, a_f, All \matches E \{ d \} \rightsquigarrow E' \{ d \} \produces p_r, a_r, k_r}
+    \infer1[]{\mathcal{F}, p_b, a_b, k_b \matches Residue(p_f, a_f, E) \{ d \} \rightsquigarrow E' \{ d \} \produces p_r, a_r, k_r}
+  \end{prooftree}
+\end{equation}
+
+However, if it does, we need to keep it.
+
+\begin{equation}
+  \begin{prooftree}
+    \hypo{\mathcal{F}, p_f, a_f, All \matches E \{ d \} \rightsquigarrow E' \{ d \} \produces p_f, a_f, All}
+    \infer1[]{\mathcal{F}, p_b, a_b, k_b \matches Residue(p_f, a_f, E) \{ d \} \rightsquigarrow Residue(p_f, a_f, E') \{ d \} \produces p_f, a_f, All}
+  \end{prooftree}
+\end{equation}

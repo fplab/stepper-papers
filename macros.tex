@@ -1,0 +1,97 @@
+% !TEX root = ./main.tex
+
+%%% Editing Convience Macros
+
+\newif\ifdraft
+\drafttrue
+\newcommand{\TODO}[1]{\ifdraft{\textcolor{red}{\textbf{TODO}: {#1}}}\fi}
+\newcommand{\mck}[1]{\ifdraft{\color{purple}[#1 --Matt]}\fi}
+\newcommand{\hxf}[1]{\ifdraft{\color{blue}[#1 --Haoxiang]}\fi}
+
+%%% Hazel language highlight
+
+\lstdefinelanguage{hazel}{
+  columns=fullflexible,
+  keepspaces=true,
+  basicstyle=\ttfamily\color{black},
+  keywords={
+    let, in, case, end, type,
+    eval, pause, hide, debug
+  },
+  keywordstyle=\bfseries\color{black},
+  commentstyle=\color{gray},
+}
+
+%%% Stepper/Filter Semantics
+
+\DeclareMathSymbol{\Gamma}{\mathalpha}{operators}{0}
+\DeclareMathSymbol{\Delta}{\mathalpha}{operators}{1}
+\DeclareMathSymbol{\Theta}{\mathalpha}{operators}{2}
+\DeclareMathSymbol{\Lambda}{\mathalpha}{operators}{3}
+\DeclareMathSymbol{\Xi}{\mathalpha}{operators}{4}
+\DeclareMathSymbol{\Pi}{\mathalpha}{operators}{5}
+\DeclareMathSymbol{\Sigma}{\mathalpha}{operators}{6}
+\DeclareMathSymbol{\Upsilon}{\mathalpha}{operators}{7}
+\DeclareMathSymbol{\Phi}{\mathalpha}{operators}{8}
+\DeclareMathSymbol{\Psi}{\mathalpha}{operators}{9}
+\DeclareMathSymbol{\Omega}{\mathalpha}{operators}{10}
+
+
+\DeclareMathOperator{\DefPat}{Pat}
+\DeclareMathOperator{\DefExp}{Exp}
+\DeclareMathOperator{\DefVal}{Val}
+\DeclareMathOperator{\DefCtx}{Ctx}
+\DeclareMathOperator{\DefAct}{Act}
+\DeclareMathOperator{\DefGas}{Gas}
+\DeclareMathOperator{\DefFilter}{Filter}
+\DeclareMathOperator{\KeywordFilter}{filter}
+\DeclareMathOperator{\KeywordResidue}{residue}
+% \DeclareMathOperator{\Nat}{\mathsf{Nat}}
+
+\newcommand{\Nat}[1]{\underline{#1}}
+\newcommand{\Lam}[3]{\lambda #1 : #2 . #3}
+\newcommand{\Filter}[4]{\KeywordFilter #1 ~\mathsf{do}~ #2 ~\mathsf{for}~ #3 ~\mathsf{in}~ #4}
+\newcommand{\Residue}[4]{\mathsf{do}~ #1 ~\mathsf{for}~ #2 ~\mathsf{at}~ #3 ~\mathsf{in}~ #4}
+
+\newcommand{\Value}[1]{#1~\mathsf{value}}
+\newcommand{\FEStep}[2]{#1 \mapsto #2}
+\newcommand{\FSubst}[3]{[#1/#2] #3}
+
+\newcommand{\FCMark}{\circ}
+
+\newcommand{\FASkip}{\mathsf{skip}}
+\newcommand{\FAStep}{\mathsf{step}}
+\newcommand{\FGOne}{\mathsf{one}}
+\newcommand{\FGAll}{\mathsf{all}}
+
+\DeclareMathOperator{\Strip}{strip}
+
+\newcommand{\Decompose}[3]{#1 \Rightarrow #2 \{ #3 \}}
+\newcommand{\Compose}[3]{#1 \Leftarrow #2 \{ #3 \}}
+
+\newcommand{\Matches}[2]{#1 \mathrel{\mathop{\triangleright}} #2}
+\newcommand{\FPatMatchesExpOp}{\mathrel{\mathop{\triangleright}}}
+\newcommand{\FPatMatchesExp}[2]{#1 \FPatMatchesExpOp #2}
+\newcommand{\FPatNotMatchesExpOp}{\mathrel{\mathop{\not\triangleright}}}
+\newcommand{\FPatNotMatchesExp}[2]{#1 \FPatNotMatchesExpOp #2}
+
+\newcommand{\FPatMatchesCtxOpL}{\mathrel{\mathop{\triangleright_\circ}}}
+\newcommand{\FPatMatchesCtxOpR}{\mathrel{\mathop{\triangleleft_\circ}}}
+\newcommand{\FPatMatchesCtx}[3]{#1 \FPatMatchesCtxOpL #2 \{ #3 \}}
+
+\newcommand{\FInstruct}[3]{#1 \vdash #2 \rightsquigarrow #3}
+
+\newcommand{\Analyze}[4]{#1 \vdash #2 \rightsquigarrow #3 \dashv #4}
+
+\newcommand{\FTrans}[2]{#1 \rightarrow #2}
+
+\newcommand{\FStep}[3]{#1 \vdash #2 \mapsto #3}
+
+\newcommand{\FHasType}[3]{#1 \vdash #2 : #3}
+\newcommand{\FInTypeContext}[3]{#1 : #2 \in #3}
+\newcommand{\FTNat}{\mathbb{N}}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
