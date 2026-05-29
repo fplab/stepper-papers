@@ -13,8 +13,8 @@ However, even moderately sized programs produce long traces. Computing
 \code{fac(3)}, for instance, already requires over a dozen small steps
 when every arithmetic operation and substitution is shown
 (Figure~\ref{fig:intro-fac-unfiltered}), and realistic classroom
-examples---recursive list traversals, higher-order functions, pattern
-matching---generate traces that are far longer. Most of these steps
+examples (recursive list traversals, higher-order functions, pattern
+matching) generate traces that are far longer. Most of these steps
 are mundane: they perform arithmetic that the student already
 understands, or substitute values into bindings that are not relevant
 to the concept being taught. The sheer volume obscures the key ideas
@@ -32,8 +32,8 @@ applied to fully evaluated arguments.''
 
 We address this gap with a \emph{scoped filter system} that gives
 users pattern-based control over which reduction steps are shown or
-hidden. Users write lightweight filter annotations---embedded directly
-in the program text---that specify patterns over expressions. A filter
+hidden. Users write lightweight filter annotations, embedded directly
+in the program text, that specify patterns over expressions. A filter
 can \emph{hide} all steps matching a pattern, \emph{show} (stop at) steps
 matching a pattern, or apply these effects to the entire evaluation of
 a matched sub-expression rather than a single step. Because filters

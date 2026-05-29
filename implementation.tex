@@ -13,14 +13,14 @@ substitution-based small-step evaluator for the simply typed lambda
 calculus extended with a fixpoint operator and the full filter calculus.
 The core is roughly 560 lines of OCaml, structured as a direct
 transliteration of the formal judgments: expressions, patterns, actions,
-and gas are mutually recursive algebraic data types; filter and residue
-expressions are constructors of the expression type.
+and gas are mutually recursive algebraic data types, and filter and
+residue expressions are constructors of the expression type.
 
 A single stepping function orchestrates the pipeline described in
 Section~\ref{sec:dynamics}, calling instrumentation, optimization,
 decomposition, action selection, and decay in sequence. If action
 selection for the selected redex yields \(\ActSkip\), the stepper
-performs the instruction transition and recurses; if it yields
+performs the instruction transition and recurses. If it yields
 \(\ActStep\), the stepper returns the list of available redexes to
 the caller.
 
@@ -74,13 +74,13 @@ Section~\ref{sec:dynamics}. The instrumentation rules walk the whole
 expression, and at each node test the active filter's pattern against that
 node---the I-Y/I-N split. With $k$ filters in scope and an expression of size
 $n$, this is $O(n \cdot k \cdot |p|)$ work per step, where $|p|$ is the largest
-pattern; the $k$ factor is unavoidable, since a deeply nested filter must still
+pattern. The $k$ factor is unavoidable, since a deeply nested filter must still
 be considered at every node it covers.
 
 The structural problem is what happens when several nested filters
 match the same redex: each match inserts its own residue, stacking
 them into a chain $k$ deep around a single node. Worse, those residues
-are not transient---they persist as part of the expression into the
+are not transient: they persist as part of the expression into the
 next step, where re-instrumentation walks over them and may add more
 on top. Without intervention, residue chains grow with the
 \emph{history} of stepping, not just with the size of the program, so
@@ -94,7 +94,7 @@ stays at $O(1)$ and the total residue count stays at $O(n)$ regardless
 of how many filters are in scope. Decomposition and action selection
 then work on an expression tree of size $O(n)$ rather than
 $O(n \cdot k)$. The $|p|$ factor in instrumentation remains the
-asymptotic bottleneck per step---unsurprisingly, since pattern
+asymptotic bottleneck per step. This is unsurprising, since pattern
 matching is the work the user is actually paying for.
 
 %%% Local Variables:

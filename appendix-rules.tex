@@ -1,32 +1,11 @@
 \section{Standard Rules}\label{sec:standard_rules}
 
-This appendix collects the standard judgments of the Filtered Stepper
-Calculus that extend the usual lambda calculus definitions with filter
-and residue frames.
-
-\fbox{\(\DefCtx \mathcal{E}\)} Context \(\mathcal{E}\).
-\[
-  \DefCtx \mathcal{E}
-  = \Mark
-  \mid \mathcal{E}(d)
-  \mid d(\mathcal{E})
-  \mid \mathcal{E} + d
-  \mid d + \mathcal{E}
-  \mid \Filter{f}{\mathcal{E}}
-  \mid \Residue{a}{g}{l}{\mathcal{E}}
-\]
-
-\fbox{\(\Value e\)} Expression \(e\) is a value.
-\begin{mathpar}
-  \inferrule[V-Lam]{
-  }{
-    \Value{\Lam{x}{e}}
-  } \qquad
-  \inferrule[V-Nat]{
-  }{
-    \Value{\Nat{n}}
-  }
-\end{mathpar}
+This appendix collects the standard meta-functions and rules of the
+filtered stepper calculus (substitution, decomposition, and
+composition) deferred from \autoref{sec:filter}. The syntax of
+evaluation contexts and the value judgment are given in
+\autoref{fig:filter-syntax} and the accompanying rules in the main
+body.
 
 \fbox{\([v / x] e = e'\)} \(e'\) can be obtained by substitution of \(v\) for
 \(x\) in expression \(e\).
@@ -165,37 +144,6 @@ and residue frames.
     \Compose{e}{\mathcal{E}}{e'}
   }{
     \Compose{\Residue{a}{g}{l}{e}}{\Residue{a}{g}{l}{\mathcal{E}}}{e'}
-  }
-\end{mathpar}
-
-\fbox{\(\Transition{e}{e'}\)} \(e\) takes an instruction transition to \(e'\).
-\begin{mathpar}
-  \inferrule[T-Ap]{
-    \Value{e_2}
-  }{
-    \Transition{(\Lam{x}{e_1})(e_2)}{\FSubst{e_2}{x}{e_1}}
-  } \\
-  \inferrule[T-Add]{
-    \Value{n_1} \\
-    \Value{n_2} \\
-    n_1 + n_2 = n
-  }{
-    \Transition{\Nat{n_1} + \Nat{n_2}}{\Nat{n}}
-  } \\
-  \inferrule[T-Residue]{
-    \Value{v}
-  }{
-    \Transition{\Residue{a}{g}{l}{v}}{v}
-  } \qquad
-  \inferrule[T-Filter]{
-    \Value{v}
-  }{
-    \Transition{\Filter{f}{v}}{v}
-  } \\
-  \inferrule[T-Fix]{
-    \
-  }{
-    \Transition{\Fix{x}{e}}{[\Fix{x}{e} / x] e}
   }
 \end{mathpar}
 

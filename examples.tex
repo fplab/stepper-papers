@@ -1,13 +1,13 @@
 Section~\ref{sec:intro} showed how a single filter can collapse a
-factorial trace to its key steps. We now use a richer
-example---mapping a function over a list---to introduce the full set
-of filter primitives and show how they compose.
+factorial trace to its key steps. We now use a richer example,
+mapping a function over a list, to introduce the full set of filter
+primitives and show how they compose.
 
 Consider the Hazel program in \autoref{fig:hazel-map}, which applies a
 \code{square} function to each element of the list \code{[1, 2, 3]}
 using \code{map}. To understand how this program evaluates to
 \code{[1, 4, 9]}, a user can invoke the Hazel stepper. The stepper
-highlights every reducible expression (redex) in the program; the user
+highlights every reducible expression (redex) in the program. The user
 clicks on a highlighted redex to reduce it, and the expression is
 rewritten in place. A history panel lets the user expand the full
 sequence of steps taken so far. \autoref{fig:full-trace} shows the
@@ -93,9 +93,9 @@ Alternatively, we might want to see not just which recursive calls
 In \autoref{fig:debug-map} we add a \code{debug step} filter to
 achieve this. The result (\autoref{fig:debug-trace}) now includes not
 only the recursive \code{map} calls, but also the intermediate
-multiplications inside each \code{square} call---for instance, the
-third and sixth lines show \code{<square>(1)} and \code{<square>(2)} being expanded into
-its constituent steps.
+multiplications inside each \code{square} call. For instance, the
+third and sixth lines show \code{<square>(1)} and \code{<square>(2)}
+being expanded into its constituent steps.
 
 \begin{figure}
   \centering
@@ -117,7 +117,7 @@ its constituent steps.
 
 Note that \code{debug step} here overrides the earlier \code{debug hide}
 and \code{debug stop}. Intuitively, the innermost filter surrounding
-the next reduction step takes priority---a form of dynamic scoping.
+the next reduction step takes priority, a form of dynamic scoping.
 In the next section, we formalize these filter primitives and their
 interactions as the \emph{Filtered Stepper Calculus}.
 
