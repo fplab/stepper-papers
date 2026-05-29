@@ -18,14 +18,20 @@ an action, and a gas, as shown in
 Table~\ref{tbl:filter-syntax-sugar}.
 
 \begin{table}[htpb]
+  \centering
   \caption{Desugaring of filter constructs. Each filter is a triple of
     a pattern~\(p\), an action~\(a\), and a gas~\(g\).}\label{tbl:filter-syntax-sugar}
-  \begin{tabular}{ll}
-    Hazel code & Desugared form \\
+  \setlength{\tabcolsep}{8pt}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Hazel code} & \textbf{Desugared form} \\
+    \hline
     \verb|debug hide(p) in e| & \(\Filter{(p, \ActSkip, \GasOne)}{e}\) \\
     \verb|debug eval(p) in e| & \(\Filter{(p, \ActSkip, \GasAll)}{e}\) \\
     \verb|debug stop(p) in e| & \(\Filter{(p, \ActStep, \GasOne)}{e}\) \\
     \verb|debug step(p) in e| & \(\Filter{(p, \ActStep, \GasAll)}{e}\) \\
+    \hline
   \end{tabular}
 \end{table}
 
@@ -216,7 +222,7 @@ intervene between two user-visible steps.
 
 \begin{figure}[h]
   \centering
-  \frame{\includegraphics[width=0.4\textwidth]{images/filter-example-user-select.png}}
+  \frame{\includegraphics[width=0.55\textwidth]{images/filter-example-user-select.png}}
   \Description{Stepper UI showing the expression 1 + 2 + 3 + 4 with a highlighted subexpression selection and control buttons.}
   \caption{Stepper UI at the user-selection step.}\label{fig:simple_example_final_ui}
 \end{figure}

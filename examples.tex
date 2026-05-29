@@ -17,14 +17,14 @@ available redexes for the next step.
 
 \begin{figure}
   \centering
-  \begin{subfigure}{0.40\linewidth}
+  \begin{subfigure}[T]{0.40\linewidth}
     \frame{\includegraphics[scale=0.34]{images/eg11.png}}
     \Description{Hazel code defining a list map function, a square function, and a call to map over [1, 2, 3].}
     \caption{The map example. Evaluates to \code{[1, 4, 9]}.}
     \label{fig:hazel-map}
   \end{subfigure}
   \hfill
-  \begin{subfigure}{0.50\linewidth}
+  \begin{subfigure}[T]{0.50\linewidth}
     \frame{\includegraphics[scale=0.37]{images/eg12.png}}
     \Description{Partial stepper trace for the map example, stopped at map([1, 2, 3], square), with highlighted next-step location and substitution annotations.}
     \caption{Partial stepper trace for the map example, stopped at \code{map([1, 2, 3], square)}. Each line is one small-step transition. The green highlight at the bottom marks where the next step will be taken.}
@@ -98,15 +98,15 @@ instance, the third and sixth lines show \code{<square>(1)} and
 
 \begin{figure}
   \centering
-  \begin{subfigure}{0.40\linewidth}
-    \frame{\includegraphics[scale=0.35]{images/eg31.png}}
+  \begin{subfigure}[T]{0.40\linewidth}
+    \frame{\includegraphics[scale=0.30]{images/eg31.png}}
     \Description{Map example with eval and step filters, including debug mode for square.}
     \caption{The code from \autoref{fig:hazel-map} with added \code{debug hide}, \code{debug stop}, and \code{debug step} filters.}
     \label{fig:debug-map}
   \end{subfigure}
   \hfill
-  \begin{subfigure}{0.50\linewidth}
-    \frame{\includegraphics[scale=0.28]{images/eg32.png}}
+  \begin{subfigure}[T]{0.56\linewidth}
+    \frame{\includegraphics[scale=0.30]{images/eg32.png}}
     \Description{Filtered trace showing recursive map steps and explicit square evaluations on list elements.}
     \caption{Filtered trace with \code{debug step}: recursive \code{map} calls are visible (as before), and each \code{square} application is expanded to show its intermediate steps.}
     \label{fig:debug-trace}
