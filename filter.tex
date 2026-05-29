@@ -78,7 +78,7 @@ are not values: they unroll during evaluation. Filter and residue
 wrappers around a value are not values either. They are eliminated by
 the instruction transition relation introduced later in this section.
 
-\fbox{\(\Value e\)} Expression \(e\) is a value.
+\jbox{\(\Value e\)} Expression \(e\) is a value.
 \begin{mathpar}
   \inferrule[V-Lam]{ }{
     \Value{\Lam{x}{e}}
@@ -97,7 +97,6 @@ transition, and composition}, and \emph{user interaction}. We
 introduce each phase by tracing one example step of a small program
 through the pipeline, then present the formal rules.
 
-\begin{minipage}{\linewidth} % Force it onto one page
 Consider the program
 
 \begin{lstlisting}[language=hazel,xleftmargin=1in]
@@ -105,8 +104,7 @@ debug eval(1 + 2 + 3 + 4) in
 debug stop(3 + 3 + 4) in
 1 + 2 + 3 + 4
 \end{lstlisting}
-\end{minipage}
-which sums the numbers from 1 to 4 left-associatively. Before
+\noindent which sums the numbers from 1 to 4 left-associatively. Before
 stepping, the stepper implicitly wraps the program in a default
 \code{debug stop(\$e)} so that every step is shown unless an
 explicit filter says otherwise. Together with the two explicit
@@ -239,7 +237,7 @@ inserted. Otherwise (the ``-N'' rules), the sub-expression is left
 unchanged. When a nested filter is encountered, its priority is
 incremented so that inner filters take precedence.
 
-\fbox{\(\InstructPAGL{p}{a}{g}{l}{e}{e'}\)} \(e\) is dynamically instrumented to \(e'\).
+\jbox{\(\InstructPAGL{p}{a}{g}{l}{e}{e'}\)} \(e\) is dynamically instrumented to \(e'\).
 \begin{mathpar}
   \inferrule[I-V]{
     \Value{v}
@@ -334,7 +332,7 @@ operation defined below. In the rules \textsc{M-Lam} and
 is up to \(\alpha\)-equivalence. The Agda mechanization enforces
 this implicitly by using de Bruijn indices throughout.
 
-\fbox{\(\Matches{p}{e}\)} Pattern \(p\) matches expression \(e\).
+\jbox{\(\Matches{p}{e}\)} Pattern \(p\) matches expression \(e\).
 \begin{mathpar}
   \inferrule[M-All]{\ }{
     \Matches{\$e}{e}
@@ -375,7 +373,7 @@ this implicitly by using de Bruijn indices throughout.
 residue wrappers from an expression. It is used by \textsc{M-Lam} and
 \textsc{M-Fix} to compare expression bodies modulo instrumentation.
 
-\fbox{\(\Strip{e} = {e'}\)} Strip filter and residue wrappers from expression \(e\).
+\jbox{\(\Strip{e} = {e'}\)} Strip filter and residue wrappers from expression \(e\).
 \[
   \begin{aligned}
     \Strip{x} &= x \\
@@ -393,7 +391,7 @@ residue wrappers from an expression. It is used by \textsc{M-Lam} and
 (\(\GasOne\)) are removed while persistent residues (\(\GasAll\)) are
 preserved for future steps:
 
-\fbox{\(\Decay{\mathcal{E}} = \mathcal{E}'\)} Evaluation context \(\mathcal{E}\) decays to context \(\mathcal{E}'\).
+\jbox{\(\Decay{\mathcal{E}} = \mathcal{E}'\)} Evaluation context \(\mathcal{E}\) decays to context \(\mathcal{E}'\).
 \[
   \begin{aligned}
     \Decay{x} &= x \\
@@ -413,7 +411,7 @@ determine whether to step or skip. When a residue has higher priority
 than the current action, it takes over. Otherwise, the existing action
 is kept:
 
-\fbox{\(\Analyze{(a, l)}{\mathcal{E}}{a'}\)} Under action \((a, l)\), context \(\mathcal{E}\) yields action \(a'\).
+\jbox{\(\Analyze{(a, l)}{\mathcal{E}}{a'}\)} Under action \((a, l)\), context \(\mathcal{E}\) yields action \(a'\).
 \begin{mathpar}
   \inferrule[A-Var]{
   }{
@@ -477,7 +475,7 @@ surrounding filter and residue wrappers become reducible and are
 stripped one at a time. Without this case, residues would
 accumulate forever around finalized values.
 
-\fbox{\(\Decompose{e}{\mathcal{E}}{e_0}\)} Expression \(e\)
+\jbox{\(\Decompose{e}{\mathcal{E}}{e_0}\)} Expression \(e\)
 decomposes into context \(\mathcal{E}\) with redex \(e_0\).
 
 \subsubsection{Composition.} Composition is the inverse of
@@ -485,7 +483,7 @@ decomposition: it plugs a redex (or the result of an instruction
 transition) back into the hole of an evaluation context. The full
 rules are given in Appendix~\ref{sec:standard_rules}.
 
-\fbox{\(\Compose{e}{\mathcal{E}}{e_0}\)} Expression \(e\) is the
+\jbox{\(\Compose{e}{\mathcal{E}}{e_0}\)} Expression \(e\) is the
 result of plugging \(e_0\) into the hole of \(\mathcal{E}\).
 
 \subsubsection{Instruction transitions.} An instruction transition
@@ -498,7 +496,7 @@ expression has finished evaluating. Substitution \(\FSubst{v}{x}{e}\)
 is the standard capture-avoiding operation, defined in
 Appendix~\ref{sec:standard_rules}.
 
-\fbox{\(\Transition{e}{e'}\)} Expression \(e\) takes an instruction transition to \(e'\).
+\jbox{\(\Transition{e}{e'}\)} Expression \(e\) takes an instruction transition to \(e'\).
 \begin{mathpar}
   \inferrule[T-Ap]{
     \Value{e_2}
@@ -538,7 +536,7 @@ consulted), so the collapse is observationally invisible. We discuss
 the cost of instrumentation and the asymptotic effect of this pass in
 Section~\ref{sec:impl-perf}.
 
-\fbox{\(\IsResidue{e}\)} \(e\) is a residue.
+\jbox{\(\IsResidue{e}\)} \(e\) is a residue.
 \begin{mathpar}
   \inferrule[Is-Residue]{
     \
@@ -547,7 +545,7 @@ Section~\ref{sec:impl-perf}.
   }
 \end{mathpar}
 
-\fbox{\(\Optimize{e}{e'}\)} \(e\) is optimized to \(e'\)
+\jbox{\(\Optimize{e}{e'}\)} \(e\) is optimized to \(e'\)
 \begin{mathpar}
   \inferrule[O-Var]{
     \
@@ -611,7 +609,7 @@ silent cases (one for when action selection yields \(\ActSkip\),
 one for when the redex is strippable), each performing the step
 silently and continuing stepping recursively.
 
-\fbox{\(\Strippable{e}\)} Expression \(e\) is a filter or residue wrapper.
+\jbox{\(\Strippable{e}\)} Expression \(e\) is a filter or residue wrapper.
 \begin{mathpar}
   \inferrule[F-Filter]{
   }{
@@ -623,7 +621,7 @@ silently and continuing stepping recursively.
   }
 \end{mathpar}
 
-\fbox{\(\Step{e}{e'}{n}\)} Expression \(e\) steps to \(e'\) in \(n\) steps.
+\jbox{\(\Step{e}{e'}{n}\)} Expression \(e\) steps to \(e'\) in \(n\) steps.
 \begin{mathpar}
   \inferrule[S-Step]{
     \InstructPAGL{\PatExpr}{\ActStep}{\GasOne}{0}{e}{e_i} \\
@@ -688,7 +686,7 @@ patterns to be closed and well-typed in their declaration
 context. The two pattern wildcards \(\PatExpr\) and \(\PatValue\)
 have any type, modeling the fact that they match any subject.
 
-\fbox{\(\TypeEntails{\Gamma}{e}{\tau}\)} Under typing context \(\Gamma\), expression \(e\) has type \(\tau\).
+\jbox{\(\TypeEntails{\Gamma}{e}{\tau}\)} Under typing context \(\Gamma\), expression \(e\) has type \(\tau\).
 \begin{mathpar}
   \inferrule[TE-Var]{
     \TypeContains{\Gamma}{x}{\tau}
@@ -735,7 +733,7 @@ have any type, modeling the fact that they match any subject.
   }
 \end{mathpar}
 
-\fbox{\(\TypeEntails{\Gamma}{p}{\tau}\)} Under typing context \(\Gamma\), pattern \(p\) has type \(\tau\).
+\jbox{\(\TypeEntails{\Gamma}{p}{\tau}\)} Under typing context \(\Gamma\), pattern \(p\) has type \(\tau\).
 \begin{mathpar}
   \inferrule[TP-Exp]{
     \
@@ -841,7 +839,7 @@ judgment that ignores all filter and residue annotations, together
 with its reflexive--transitive closure
 \(\JustStepStar{e}{e'}\).
 
-\fbox{\(\JustStep{e}{e'}{1}\)} Expression \(e\) takes one unfiltered step to \(e'\).
+\jbox{\(\JustStep{e}{e'}{1}\)} Expression \(e\) takes one unfiltered step to \(e'\).
 \begin{mathpar}
   \inferrule[J-Step]{
     \Decompose{e}{\mathcal{E}_0}{e_0} \\
@@ -852,7 +850,7 @@ with its reflexive--transitive closure
   }
 \end{mathpar}
 
-\fbox{\(\JustStepStar{e}{e'}\)} Expression \(e\) takes zero or more unfiltered steps to \(e'\).
+\jbox{\(\JustStepStar{e}{e'}\)} Expression \(e\) takes zero or more unfiltered steps to \(e'\).
 \begin{mathpar}
   \inferrule[J-Refl]{ }{
     \JustStepStar{e}{e}
