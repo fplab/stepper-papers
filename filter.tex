@@ -12,9 +12,10 @@ semantics.
 
 \subsection{Syntax}
 
-The four filter constructs introduced in Section~2 each desugar into a
-\(\Filter{f}{e}\) expression parameterized by a triple \(f = (p, a, g)\)
-of a pattern, an action, and a gas, as shown in
+The four filter constructs introduced in
+Section~\ref{sec:examples} each desugar into a \(\Filter{f}{e}\)
+expression parameterized by a triple \(f = (p, a, g)\) of a pattern,
+an action, and a gas, as shown in
 Table~\ref{tbl:filter-syntax-sugar}.
 
 \begin{table}[htpb]
@@ -140,7 +141,7 @@ higher-priority inner \(\Residue{\ActSkip}{\GasAll}{1}{\cdot}\):
 The expression is split into an evaluation context \(\mathcal{E}\)
 and a selected redex \(e_0\); the relation is non-deterministic,
 as the stepper offers the user a choice of redexes.
-However, this choice is only meaningful when the step will be shown to the user: if the action selection in next step yields \(\ActSkip\), then the stepper will pick one redex deterministically (in practie, the first) and continues.
+However, this choice is only meaningful when the step will be shown to the user: if action selection in the next step yields \(\ActSkip\), then the stepper picks one redex deterministically (in practice, the first) and continues.
 Here we select \code{1 + 2} as the redex, yielding the
 evaluation context:
 \begin{lstlisting}[language=hazel]
@@ -275,7 +276,7 @@ incremented so that inner filters take precedence.
 
 Instrumentation is the cost center of a step: each step re-instruments
 the entire subtree, and because residues persist across steps, these
-re-instruments leave more and more residues in the expression. and the
+re-instruments leave more and more residues in the expression. The
 optimization pass below exists to keep that work from compounding across
 steps.
 

@@ -18,10 +18,11 @@ expressions are constructors of the expression type.
 
 A single stepping function orchestrates the pipeline described in
 Section~\ref{sec:dynamics}, calling instrumentation, optimization,
-decomposition, annotation, and decay in sequence. If the annotation for
-the selected redex is \(\ActSkip\), the stepper performs the instruction
-transition and recurses; if it is \(\ActStep\), it returns the list of
-available redexes to the caller.
+decomposition, action selection, and decay in sequence. If action
+selection for the selected redex yields \(\ActSkip\), the stepper
+performs the instruction transition and recurses; if it yields
+\(\ActStep\), the stepper returns the list of available redexes to
+the caller.
 
 Because the reference implementation uses substitution-based evaluation
 and named variables, it corresponds closely to the on-paper calculus and

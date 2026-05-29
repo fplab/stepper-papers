@@ -2,23 +2,24 @@ Substitution-based equational reasoning is a cornerstone of functional
 programming education: students learn to evaluate programs by
 repeatedly rewriting redexes, producing a trace of steps that serves
 as a proof of the final result. Hazel~\cite{omar2017hazelnut} is a
-live functional programming environment adopted for use in an upper-level
-programming languages course taught by a co-author, where we teach exactly this style of
-reasoning. A natural pedagogical tool in this setting is an
+live functional programming environment that has been adopted for use
+in an upper-level programming languages course in which this style of
+reasoning is taught. A natural pedagogical tool in this setting is an
 \emph{algebraic stepper}---a ``debugger'' that presents each small-step
 reduction as a justified equational step, mirroring what students see
 in typeset or handwritten lectures and assignments.
 
 However, even moderately sized programs produce long traces. Computing
-\code{fac(3)} already requires over a dozen small steps when every
-arithmetic operation and substitution is shown, and realistic
-classroom examples---recursive list traversals, higher-order
-functions, pattern matching---generate traces that are far longer.
-Most of these steps are mundane: they perform arithmetic that the
-student already understands, or substitute values into bindings that
-are not relevant to the concept being taught. The sheer volume
-obscures the key ideas the instructor wants to highlight and makes the
-stepper tedious to use in lectures and homework alike.
+\code{fac(3)}, for instance, already requires over a dozen small steps
+when every arithmetic operation and substitution is shown
+(Figure~\ref{fig:intro-fac-unfiltered}), and realistic classroom
+examples---recursive list traversals, higher-order functions, pattern
+matching---generate traces that are far longer. Most of these steps
+are mundane: they perform arithmetic that the student already
+understands, or substitute values into bindings that are not relevant
+to the concept being taught. The sheer volume obscures the key ideas
+the instructor wants to highlight and makes the stepper tedious to use
+in lectures and homework alike.
 
 Existing tools offer limited help with this problem. The Racket algebraic stepper~\cite{clements2001stepper}
 faithfully presents small-step reductions but provides no mechanism
@@ -41,17 +42,12 @@ an inner filter can override an outer one, and a filter attached to a
 function body travels with the closure, taking effect wherever the
 function is called.
 
-For example, consider a program that computes \(n!\)
-(Figure~\ref{fig:intro-fac}). Without filters, the stepper displays
-every reduction step, including routine arithmetic and substitutions
-(Figure~\ref{fig:intro-fac-unfiltered}). By adding a filter that
-hides all steps \code{debug eval(\$e)} except those involving a
-function application by adding \code{debug stop(fac(\$v))}, the
-trace collapses to just the key recursive calls on the \code{fac}
-function and the final result
-(Figure~\ref{fig:intro-fac-filtered}).
-
-% TODO: rephrase the paragraph above to link into the image and explain how we did this.
+Returning to the factorial example, suppose the instructor wants to
+show only the recursive calls and hide the routine arithmetic. Adding
+\code{debug eval(\$e)} hides every step, while \code{debug stop(fac(\$v))}
+overrides this on applications of \code{fac} to a value. The resulting
+trace (Figure~\ref{fig:intro-fac-filtered}) shows only the key
+recursive calls and the final result.
 
 \begin{figure}[h]
   \begin{center}
@@ -80,28 +76,24 @@ We make the following contributions:
 \begin{itemize}
   \item We present the \emph{Filtered Stepper Calculus}, a formal
     semantics for scoped, pattern-based stepping control over
-    expression evaluation. The calculus extends a standard small-step
-    semantics with filter and residue expressions that govern which
-    steps are shown to the user. We prove preservation, progress, and a
-    simulation theorem (the filtered stepper agrees with the underlying
-    unfiltered semantics), and mechanize all proofs in Agda.
-  \item We implement the filtered stepper in Hazel. The implementation
-    reconciles Hazel's internal environment-based big-step evaluator
-    with the substitution-based presentation expected by students,
-    and includes several optimizations to keep interactive stepping
-    responsive.
+    expression evaluation. We introduce its filter primitives by
+    example in Section~\ref{sec:examples}, then formalize the calculus
+    in Section~\ref{sec:filter}, where we prove preservation,
+    progress, and a simulation theorem (the filtered stepper agrees
+    with the underlying unfiltered semantics) and mechanize all proofs
+    in Agda.
+  \item We implement the filtered stepper in Hazel
+    (Section~\ref{sec:implementation}). The implementation reconciles
+    Hazel's internal environment-based big-step evaluator with the
+    substitution-based presentation expected by students, and includes
+    several optimizations to keep interactive stepping responsive.
   \item We deploy the stepper in a university programming languages
-    course and report quantitative usage data and survey responses from student assignments.
+    course and report quantitative usage data and survey responses
+    from student assignments (Section~\ref{sec:evaluation}).
 \end{itemize}
 
-The remainder of the paper is organized as follows.
-Section~2 introduces the Hazel stepper by example, demonstrating the
-four filter primitives and their interactions.
-Section~3 presents the Filtered Stepper Calculus and its
-metatheory.
-Section~4 describes the implementation.
-Section~5 reports on our evaluation.
-Section~6 discusses related work, and Section~7 concludes.
+Section~\ref{sec:related} situates the work in related literature, and
+Section~\ref{sec:discussion} concludes.
 
 %%% Local Variables:
 %%% mode: LaTeX

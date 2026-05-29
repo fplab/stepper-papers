@@ -1,7 +1,7 @@
-Section~1 showed how a single filter can collapse a factorial trace to
-its key steps. We now use a richer example---mapping a function over a
-list---to introduce the full set of filter primitives and show how they
-compose.
+Section~\ref{sec:intro} showed how a single filter can collapse a
+factorial trace to its key steps. We now use a richer
+example---mapping a function over a list---to introduce the full set
+of filter primitives and show how they compose.
 
 Consider the Hazel program in \autoref{fig:hazel-map}, which applies a
 \code{square} function to each element of the list \code{[1, 2, 3]}
@@ -48,9 +48,8 @@ expression the user can write is also a valid pattern. Two additional
 forms are provided: \code{\$e}, which matches any expression, and
 \code{\$v}, which matches any value. For example,
 \code{map(\$v, \$v)} matches any application of \code{map} to two
-fully-evaluated arguments. More details on pattern matching are given
-in the judgment \fbox{\(\Matches{p}{e}\)}. We provide four filter
-constructs:
+fully-evaluated arguments. We give the formal pattern-matching rules
+in Section~\ref{sec:filter}. We provide four filter constructs:
 \begin{itemize}
   \item \code{debug hide(\textit{pat})}: hide \emph{one} matching step.
   \item \code{debug stop(\textit{pat})}: show \emph{one} matching step (overrides hide).
