@@ -2,18 +2,38 @@
 
 To assess how the filtered stepper supports instructors and students
 learning functional programming, we deployed it in an upper-level
-university programming languages course.
+university programming languages course. We first report on the
+instructor's experience using the stepper in lecture, then on student
+usage and survey responses from homework assignments.
 
-% \subsection{Lecture Integration}
+\subsection{Lecture Integration}
 
-\TODO{Lecture Integrations}
+Before the filtered stepper was integrated into Hazel, the instructor
+of the course presented small-step reductions in lecture by hand,
+working through example traces on the whiteboard. This required significant
+time writing out reductions that were mostly similar between steps.
+Since the stepper was deployed, the instructor has
+used it to run these example evaluations live in lecture instead.
+This shift had three practical effects. First, walking through an
+evaluation became substantially less tedious. Filter annotations
+let the instructor collapse routine reductions and surface only the
+steps that matter for the lesson at hand, without having to commit
+to those choices in slide content ahead of time. Second, when a
+student asked a follow-up question, the instructor was able to edit the
+example and rerun the stepper in real time. With hand-worked paper
+traces, exploring a ``what if we changed this?'' would have stalled
+the lecture. Third, the
+stepper served as a running demonstration of Hazel itself: the same
+environment the students were using for their assignments was on
+display in lecture, with its hole-driven editor, live evaluation,
+and stepper visible side by side.
 
-% \subsection{Assignment Integration}
+\subsection{Assignment Integration}
 
 The assignments we evaluated our stepper on usually consist of several tasks, each of which asks students to implement or complete a function to pass given unit tests. To help students focus on their task, we provide prelude Hazel definitions that they can use directly in their assignments. We do not want students to inspect the evaluation of the prelude, as this would break the narrative that the prelude already exists in the environment. We therefore insert a \lstinline[language=hazel]{debug hide($e)} at the very top of the program, and a \lstinline[language=hazel]{debug stop($e)} before the user program. Whenever the user turns the stepper on, it skips evaluation of the prelude and stops at the entrance of the user program.
 
-We have collected anonymous data from students during one of their
-assignments. The number of steps used by students is shown in the
+We collected anonymous data from students during one of their
+assignments. The number of steps used by students is shown in
 Figure~\ref{fig:eval-num-steps}.
 
 \begin{figure}[ht]
@@ -37,15 +57,14 @@ Figure~\ref{fig:eval-num-steps}.
   \label{fig:eval-num-steps}
 \end{figure}
 
-The first observation we made is, these students were never explicitly
-told anything about how to use the stepper, and they weren't told to
-use the stepper at any point in the homework, but almost half of them
-saw the instructor use it in lecture and decided they wanted to use it.
+Students were never explicitly instructed in how to use the stepper,
+and were not asked to use it on the homework. Even so, nearly half
+of them saw the instructor demonstrate it in lecture and chose to
+use it themselves on the assignment.
 
-However, as we can see, the number of steps used by students roughly
-conforms to an exponential distribution. This implies that a small
-portion of students use the stepper extensively, while most students
-just briefly tried it or did not use it at all.
+The number of steps used by students roughly conforms to an
+exponential distribution. A small portion of students use the
+stepper extensively.
 
 To complement the usage data, we administered an anonymous end-of-term
 survey to the same cohort. Of 25 respondents, 20 reported using the
