@@ -1,0 +1,205 @@
+\section{Standard Rules}\label{sec:standard_rules}
+
+This appendix collects the standard judgments of the Filtered Stepper
+Calculus that extend the usual lambda calculus definitions with filter
+and residue frames.
+
+\fbox{\(\DefCtx \mathcal{E}\)} Context \(\mathcal{E}\).
+\[
+  \DefCtx \mathcal{E}
+  = \Mark
+  \mid \mathcal{E}(d)
+  \mid d(\mathcal{E})
+  \mid \mathcal{E} + d
+  \mid d + \mathcal{E}
+  \mid \Filter{f}{\mathcal{E}}
+  \mid \Residue{a}{g}{l}{\mathcal{E}}
+\]
+
+\fbox{\(\Value e\)} Expression \(e\) is a value.
+\begin{mathpar}
+  \inferrule[V-Lam]{
+  }{
+    \Value{\Lam{x}{e}}
+  } \qquad
+  \inferrule[V-Nat]{
+  }{
+    \Value{\Nat{n}}
+  }
+\end{mathpar}
+
+\fbox{\([v / x] e = e'\)} \(e'\) can be obtained by substitution of \(v\) for
+\(x\) in expression \(e\).
+\[
+  \begin{aligned}
+    [v / x] \Nat{n} &= \Nat{n} \\
+    [v / x] x &= v \\
+    [v / x] y &= y && \text{if } x \neq y \\
+    [v / x] (e_1(e_2)) &= ([v / x] e_1)([v / x] e_2) \\
+    [v / x] (e_1 + e_2) &= ([v / x] e_1) + ([v / x] e_2) \\
+    [v / x] \Lam{y}{e} &= \Lam{y}{[v / x] e} && \text{if } x \neq y \\
+    [v / x] \Lam{y}{e} &= \Lam{y}{e} && \text{if } x = y \\
+    [v / x] \Filter{(p, a, g)}{e} &= \Filter{([v / x]p, a, g)}{[v / x] e} \\
+    [v / x] \Residue{a}{g}{l}{e} &= \Residue{a}{g}{l}{[v / x] e} \\
+    [v / x] \Fix{x}{e} &= \Fix{x}{e} \\
+    [v / x] \Fix{y}{e} &= \Fix{y}{[v / x]e} && \text{if } x \neq y
+  \end{aligned}
+\]
+
+\fbox{\([v / x] p = p'\)} \(p'\) can be obtained by substitution of \(v\) for
+\(x\) in pattern \(p\).
+\[
+  \begin{aligned}
+    [v / x] \$e &= \$e \\
+    [v / x] \$v &= \$v \\
+    [v / x] \Nat{n} &= \Nat{n} \\
+    [v / x] y &= y && \text{if } x \neq y \\
+    [v / x] (p_1(p_2)) &= ([v / x] p_1)([v / x] p_2) \\
+    [v / x] (p_1 + p_2) &= ([v / x] p_1) + ([v / x] p_2) \\
+    [v / x] \Lam{y}{e} &= \Lam{y}{[v / x] e} && \text{if } x \neq y \\
+    [v / x] \Lam{y}{e} &= \Lam{y}{e} && \text{if } x = y \\
+    [v / x] \Fix{x}{e} &= \Fix{x}{e} \\
+    [v / x] \Fix{y}{e} &= \Fix{y}{[v / x]e} && \text{if } x \neq y
+  \end{aligned}
+\]
+
+\fbox{\(\Decompose{e}{\mathcal{E}}{e'}\)} Expression \(e\) can be decomposed into context \(\mathcal{E}\) and redex \(e'\).
+\begin{mathpar}
+  % Residue
+  \inferrule[D-Residue-T]{
+    \Decompose{e}{\mathcal{E}}{e'}
+  }{
+    \Decompose{\Residue{a}{g}{l}{e}}{\Residue{a}{g}{l}{{\mathcal{E}}}}{e'}
+  } \qquad
+  \inferrule[D-Residue-E]{
+    \Value{v}
+  }{
+    \Decompose{\Residue{a}{g}{l}{v}}{\circ}{\Residue{a}{g}{l}{v}}
+  } \\
+  % Filter
+  \inferrule[D-Filter-T]{
+    \Decompose{e}{\mathcal{E}}{e'}
+  }{
+    \Decompose{\Filter{f}{e}}{\Filter{f}{\mathcal{E}}}{e'}
+  } \qquad
+  \inferrule[D-Filter-E]{
+    \Value{v}
+  }{
+    \Decompose{\Filter{f}{v}}{\circ}{\Filter{f}{v}}
+  } \\
+  % Application
+  \inferrule[D-Ap-L]{
+    \Decompose{e_1}{\mathcal{E}_1}{e_1'}
+  }{
+    \Decompose{e_1(e_2)}{\mathcal{E}_1(e_2)}{e_1'}
+  } \qquad
+  \inferrule[D-Ap-R]{
+    \Value{e_1} \\
+    \Decompose{e_2}{\mathcal{E}_2}{e_2'}
+  }{
+    \Decompose{e_1(e_2)}{e_1(\mathcal{E}_2)}{e_2'}
+  } \qquad
+  \inferrule[D-Ap-E]{
+    \Value{e_1} \\
+    \Value{e_2}
+  }{
+    \Decompose{e_1(e_2)}{\circ}{e_1(e_2)}
+  } \\
+  % Addition
+  \inferrule[D-Add-L]{
+    \Decompose{e_1}{\mathcal{E}_1}{e_1'}
+  }{
+    \Decompose{e_1 + e_2}{\mathcal{E}_1 + e_2}{e_1'}
+  } \qquad
+  \inferrule[D-Add-R]{
+    \Value{e_1} \\
+    \Decompose{e_2}{\mathcal{E}_2}{e_2'}
+  }{
+    \Decompose{e_1 + e_2}{e_1 + \mathcal{E}_2}{e_2'}
+  } \qquad
+  \inferrule[D-Add-E]{
+    \Value{e_1} \\
+    \Value{e_2}
+  }{
+    \Decompose{e_1 + e_2}{\circ}{e_1 + e_2}
+  } \\
+  \inferrule[D-Fix-E]{
+    \
+  }{
+    \Decompose{\Fix{x}{e}}{\circ}{\Fix{x}{e}}
+  }
+\end{mathpar}
+
+\fbox{\(\Compose{e}{\mathcal{E}}{e'}\)} Expression \(e\) can be obtained by plugging \(e'\) into the mark of \(\mathcal{E}\).
+\begin{mathpar}
+  \inferrule[C-Top]{
+  }{
+    \Compose{e}{\circ}{e}
+  } \\
+  \inferrule[C-Ap-L]{
+    \Compose{e_1}{\mathcal{E}_1}{e_1'}
+  }{
+    \Compose{e_1(e_2)}{\mathcal{E}_1(e_2)}{e_2'}
+  } \qquad
+  \inferrule[C-Ap-R]{
+    \Compose{e_2}{\mathcal{E}}{e_2'}
+  }{
+    \Compose{e_1(e_2)}{e_1(\mathcal{E}_2)}{e_2'}
+  } \\
+  \inferrule[C-Add-L]{
+    \Compose{e_1}{\mathcal{E}_1}{e_1'}
+  }{
+    \Compose{e_1 + e_2}{\mathcal{E}_1 + e_2}{e_1'}
+  } \qquad
+  \inferrule[C-Add-R]{
+    \Compose{e_2}{\mathcal{E}_2}{e_2'}
+  }{
+    \Compose{e_1 + e_2}{e_1 + \mathcal{E}_2}{e_2'}
+  } \\
+  \inferrule[C-Filter]{
+    \Compose{e}{\mathcal{E}}{e'}
+  }{
+    \Compose{\Filter{f}{e}}{\Filter{f}{\mathcal{E}}}{e'}
+  } \qquad
+  \inferrule[C-Residue]{
+    \Compose{e}{\mathcal{E}}{e'}
+  }{
+    \Compose{\Residue{a}{g}{l}{e}}{\Residue{a}{g}{l}{\mathcal{E}}}{e'}
+  }
+\end{mathpar}
+
+\fbox{\(\Transition{e}{e'}\)} \(e\) takes an instruction transition to \(e'\).
+\begin{mathpar}
+  \inferrule[T-Ap]{
+    \Value{e_2}
+  }{
+    \Transition{(\Lam{x}{e_1})(e_2)}{\FSubst{e_2}{x}{e_1}}
+  } \\
+  \inferrule[T-Add]{
+    \Value{n_1} \\
+    \Value{n_2} \\
+    n_1 + n_2 = n
+  }{
+    \Transition{\Nat{n_1} + \Nat{n_2}}{\Nat{n}}
+  } \\
+  \inferrule[T-Residue]{
+    \Value{v}
+  }{
+    \Transition{\Residue{a}{g}{l}{v}}{v}
+  } \qquad
+  \inferrule[T-Filter]{
+    \Value{v}
+  }{
+    \Transition{\Filter{f}{v}}{v}
+  } \\
+  \inferrule[T-Fix]{
+    \
+  }{
+    \Transition{\Fix{x}{e}}{[\Fix{x}{e} / x] e}
+  }
+\end{mathpar}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main"
+%%% End:

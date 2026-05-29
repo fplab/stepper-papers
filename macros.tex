@@ -1,12 +1,16 @@
 % !TEX root = ./main.tex
 
-%%% Editing Convience Macros
+%%% Editing Convenience Macros
 
-\newif\ifdraft
-\drafttrue
+\newif\ifdraft%
+\drafttrue%
 \newcommand{\TODO}[1]{\ifdraft{\textcolor{red}{\textbf{TODO}: {#1}}}\fi}
 \newcommand{\mck}[1]{\ifdraft{\color{purple}[#1 --Matt]}\fi}
 \newcommand{\hxf}[1]{\ifdraft{\color{blue}[#1 --Haoxiang]}\fi}
+\newcommand{\cyr}[1]{\ifdraft{\color{green}[#1 --Cyrus]}\fi}
+
+%%% Inline code with background highlight
+\definecolor{codebg}{gray}{0.92}
 
 %%% Hazel language highlight
 
@@ -16,11 +20,16 @@
   basicstyle=\ttfamily\color{black},
   keywords={
     let, in, case, end, type,
-    eval, pause, hide, debug
+    eval, stop, hide, step, debug,
+    fun,
+    if, then, else,
   },
   keywordstyle=\bfseries\color{black},
   commentstyle=\color{gray},
 }
+
+%%% Inline code command with background
+\newcommand{\code}[1]{{\fboxsep=1.5pt\colorbox{codebg}{\texttt{\small #1}}}}
 
 %%% Stepper/Filter Semantics
 
@@ -36,6 +45,7 @@
 \DeclareMathSymbol{\Psi}{\mathalpha}{operators}{9}
 \DeclareMathSymbol{\Omega}{\mathalpha}{operators}{10}
 
+%% Kinds
 
 \DeclareMathOperator{\DefPat}{Pat}
 \DeclareMathOperator{\DefExp}{Exp}
@@ -43,53 +53,91 @@
 \DeclareMathOperator{\DefCtx}{Ctx}
 \DeclareMathOperator{\DefAct}{Act}
 \DeclareMathOperator{\DefGas}{Gas}
+\DeclareMathOperator{\DefLvl}{Priority}
 \DeclareMathOperator{\DefFilter}{Filter}
-\DeclareMathOperator{\KeywordFilter}{filter}
-\DeclareMathOperator{\KeywordResidue}{residue}
-% \DeclareMathOperator{\Nat}{\mathsf{Nat}}
+\DeclareMathOperator{\DefTyp}{Typ}
+\DeclareMathOperator{\DefTypCtx}{TypCtx}
+\DeclareMathOperator{\KeywordFilter}{debug}
+\DeclareMathOperator{\KeywordHide}{hide}
+\DeclareMathOperator{\KeywordEval}{eval}
+\DeclareMathOperator{\KeywordPause}{pause}
+\DeclareMathOperator{\KeywordDebug}{debug}
+\DeclareMathOperator{\KeywordResidue}{do}
 
-\newcommand{\Nat}[1]{\underline{#1}}
-\newcommand{\Lam}[3]{\lambda #1 : #2 . #3}
-\newcommand{\Filter}[4]{\KeywordFilter #1 ~\mathsf{do}~ #2 ~\mathsf{for}~ #3 ~\mathsf{in}~ #4}
-\newcommand{\Residue}[4]{\mathsf{do}~ #1 ~\mathsf{for}~ #2 ~\mathsf{at}~ #3 ~\mathsf{in}~ #4}
+%% Terms
+
+% Pat
+\newcommand{\PatExpr}{\mathtt{\$e}}
+\newcommand{\PatValue}{\mathtt{\$v}}
+
+% Act
+\newcommand{\ActSkip}{\mathsf{skip}}
+\newcommand{\ActStep}{\mathsf{step}}
+
+% Gas
+\newcommand{\GasOne}{\mathsf{one}}
+\newcommand{\GasAll}{\mathsf{all}}
+
+% Expr
+% According to the programming template, no underline should be used (no exception).
+\newcommand{\Nat}[1]{#1}
+\newcommand{\Lam}[2]{\lambda #1 . #2}
+\newcommand{\Fix}[2]{\mu #1 . #2}
+
+\newcommand{\Filter}[2]{\KeywordFilter{} #1~\mathsf{in}~#2}
+\newcommand{\FilterEval}[2]{\KeywordFilter{} \KeywordEval{}(#1)~\mathsf{in}~#2}
+\newcommand{\FilterHide}[2]{\KeywordFilter{} \KeywordHide{}(#1)~\mathsf{in}~#2}
+\newcommand{\FilterDebug}[2]{\KeywordFilter{} \KeywordDebug{}(#1)~\mathsf{in}~#2}
+\newcommand{\FilterPause}[2]{\KeywordFilter{} \KeywordPause{}(#1)~\mathsf{in}~#2}
+
+\newcommand{\Residue}[4]{\prescript{#1}{#2}{\langle} #4 \rangle^{#3}}
+\newcommand{\ResidueEval}[2]{\KeywordEval \# #1 ~\mathsf{in}~ #2}
+\newcommand{\ResidueHide}[2]{\KeywordHide \# #1 ~\mathsf{in}~ #2}
+\newcommand{\ResiduePause}[2]{\KeywordPause \# #1 ~\mathsf{in}~ #2}
+\newcommand{\ResidueDebug}[2]{\KeywordDebug \# #1 ~\mathsf{in}~ #2}
+
+%% Functions
+
+\newcommand{\FSubst}[3]{[#1/#2] #3}
+\DeclareMathOperator{\Strip}{strip}
+\DeclareMathOperator{\Decay}{decay}
+
+%% Judgments
+
+\newcommand{\Mark}{\circ}
 
 \newcommand{\Value}[1]{#1~\mathsf{value}}
-\newcommand{\FEStep}[2]{#1 \mapsto #2}
-\newcommand{\FSubst}[3]{[#1/#2] #3}
-
-\newcommand{\FCMark}{\circ}
-
-\newcommand{\FASkip}{\mathsf{skip}}
-\newcommand{\FAStep}{\mathsf{step}}
-\newcommand{\FGOne}{\mathsf{one}}
-\newcommand{\FGAll}{\mathsf{all}}
-
-\DeclareMathOperator{\Strip}{strip}
 
 \newcommand{\Decompose}[3]{#1 \Rightarrow #2 \{ #3 \}}
 \newcommand{\Compose}[3]{#1 \Leftarrow #2 \{ #3 \}}
 
 \newcommand{\Matches}[2]{#1 \mathrel{\mathop{\triangleright}} #2}
-\newcommand{\FPatMatchesExpOp}{\mathrel{\mathop{\triangleright}}}
-\newcommand{\FPatMatchesExp}[2]{#1 \FPatMatchesExpOp #2}
-\newcommand{\FPatNotMatchesExpOp}{\mathrel{\mathop{\not\triangleright}}}
-\newcommand{\FPatNotMatchesExp}[2]{#1 \FPatNotMatchesExpOp #2}
+\newcommand{\DoesNotMatch}[2]{#1 \mathrel{\mathop{\not\triangleright}} #2}
 
-\newcommand{\FPatMatchesCtxOpL}{\mathrel{\mathop{\triangleright_\circ}}}
-\newcommand{\FPatMatchesCtxOpR}{\mathrel{\mathop{\triangleleft_\circ}}}
-\newcommand{\FPatMatchesCtx}[3]{#1 \FPatMatchesCtxOpL #2 \{ #3 \}}
+\newcommand{\InstructF}[3]{#1 \vdash #2 \rightsquigarrow #3}
+\newcommand{\InstructPAGL}[6]{(#1, #2, #3, #4) \vdash #5 \rightsquigarrow #6}
 
-\newcommand{\FInstruct}[3]{#1 \vdash #2 \rightsquigarrow #3}
+\newcommand{\Analyze}[3]{#1 \vdash #2 \dashv #3}
 
-\newcommand{\Analyze}[4]{#1 \vdash #2 \rightsquigarrow #3 \dashv #4}
+\newcommand{\Transition}[2]{#1 \rightarrow #2}
 
-\newcommand{\FTrans}[2]{#1 \rightarrow #2}
+\newcommand{\Step}[3]{#1 \twoheadrightarrow^{#3} #2}
+\newcommand{\JustStep}[3]{#1 \mapsto^{#3} #2}
 
-\newcommand{\FStep}[3]{#1 \vdash #2 \mapsto #3}
+\newcommand{\Strippable}[1]{#1~\mathsf{strippable}}
+
+\newcommand{\IsResidue}[1]{#1~\mathsf{is residue}}
+\newcommand{\Optimize}[2]{#1 \rightarrow_{opt} #2}
 
 \newcommand{\FHasType}[3]{#1 \vdash #2 : #3}
 \newcommand{\FInTypeContext}[3]{#1 : #2 \in #3}
 \newcommand{\FTNat}{\mathbb{N}}
+
+\newcommand{\Arrow}[2]{#1 \Rightarrow #2}
+\newcommand{\Natural}{\mathbb{N}}
+\newcommand{\TypeEntails}[3]{#1 \vdash #2 : #3}
+\newcommand{\TypeContains}[3]{#1 \ni #2 : #3}
+\newcommand{\TypeExtends}[3]{#1 , #2 : #3}
 
 %%% Local Variables:
 %%% mode: latex

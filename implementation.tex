@@ -1,18 +1,102 @@
-\subsection{Mini Stepper}
+% !TEX root = ./main.tex
 
-A substitution based small-stepper evaluator of simply-typed lambda calculus with
-fix point. The evaluator is implemented in OCaml, and is used to test the the
-correctness of the behaviour as specify as the semantic rules in the paper.
+We describe two implementations of the Filtered Stepper Calculus: a
+compact reference implementation in OCaml that directly mirrors the
+formal rules, and the full integration into the Hazel live programming
+environment.
 
-\subsection{Hazel Implementation}
+\subsection{Reference Implementation}\label{sec:impl-mini}
 
-talk about how the big step + small step evaluator abstractions
+To validate the formal semantics presented in Section~\ref{sec:filter},
+we built a standalone reference stepper in OCaml. It implements a
+substitution-based small-step evaluator for the simply typed lambda
+calculus extended with a fixpoint operator and the full filter calculus.
+The core is roughly 560 lines of OCaml, structured as a direct
+transliteration of the formal judgments: expressions, patterns, actions,
+and gas are mutually recursive algebraic data types; filter and residue
+expressions are constructors of the expression type.
 
-environment-based evaluator + post-processing when showing in substitution mode
+A single stepping function orchestrates the pipeline described in
+Section~\ref{sec:dynamics}, calling instrumentation, optimization,
+decomposition, annotation, and decay in sequence. If the annotation for
+the selected redex is \(\ActSkip\), the stepper performs the instruction
+transition and recurses; if it is \(\ActStep\), it returns the list of
+available redexes to the caller.
 
-Optimisation for of the stepper filter: how we remove redundant filters (while
-insure the correctness of the implementation?)
+Because the reference implementation uses substitution-based evaluation
+and named variables, it corresponds closely to the on-paper calculus and
+is easy to audit against the formal rules. We test the stepper against
+known results (e.g., verifying that \texttt{fac(5)} evaluates to 120)
+and use it as a test oracle for the Hazel integration: any divergence
+between the two indicates a bug in the production stepper.
 
-Equivalency of function:
-\TODO{compare closure & structural equivalence of the body expression}
-Finally we will move to UUID.
+\subsection{Hazel Integration}\label{sec:impl-hazel}
+
+Hazel internally uses a big-step, environment-based evaluator for
+performance: it avoids redundant substitutions and enables tail-call
+optimization. However, because the course teaches substitution-based
+equational semantics, the stepper must present traces as if
+substitution were performed eagerly.
+
+We achieve this by maintaining a single set of semantic transition
+rules that both the big-step evaluator and the small-step stepper
+interpret. The stepper works over Hazel's internal expression
+representation, which includes closures (pairs of an expression and
+an environment). During decomposition, closures are traversed like
+ordinary expressions, with the environment carried in the evaluation
+context. When the stepper displays a step to the user, a
+post-processing pass replaces all bound variables with their
+environment bindings, producing output that looks substitution-based.
+
+The filter system in Hazel mirrors the reference implementation but
+operates over Hazel's richer expression language, which includes
+pattern matching, sum and product types, type ascriptions, and typed
+holes. Filter matching uses a semantic equality check with special
+accommodations: fixpoint wrappers and type ascriptions are ignored
+during comparison, and empty holes in a pattern act as the
+\(\PatValue\) wildcard.
+
+Beyond user-written filters, Hazel exposes UI toggles that classify
+certain step kinds (fixpoint unrolling, type-ascription elimination,
+case-clause selection) as skipped-by-default for the trace, while a few
+others (closure-wrapping, residue bookkeeping) are unconditionally
+hidden because they correspond to internal machinery rather than
+user-visible reductions.
+
+% We moved the content of performance section to be alongside with the
+% Optimization rule (O-*).
+
+\subsection{Performance}\label{sec:impl-perf}
+
+We have already discussed the cost of instrumentation in
+Section~\ref{sec:dynamics}. The instrumentation rules walk the whole
+expression, and at each node test the active filter's pattern against that
+node---the I-Y/I-N split. With $k$ filters in scope and an expression of size
+$n$, this is $O(n \cdot k \cdot |p|)$ work per step, where $|p|$ is the largest
+pattern; the $k$ factor is unavoidable, since a deeply nested filter must still
+be considered at every node it covers.
+
+The structural problem is what happens when several nested filters
+match the same redex: each match inserts its own residue, stacking
+them into a chain $k$ deep around a single node. Worse, those residues
+are not transient---they persist as part of the expression into the
+next step, where re-instrumentation walks over them and may add more
+on top. Without intervention, residue chains grow with the
+\emph{history} of stepping, not just with the size of the program, so
+the cost of decomposition and action selection drifts away from $O(n)$
+toward $O(n \cdot k)$ and keeps climbing.
+
+The optimization pass cuts this back. \textsc{O-Residue-Inner} and
+\textsc{O-Residue-Outer} collapse each maximal chain of adjacent
+residues to its highest-priority survivor, so residue depth per chain
+stays at $O(1)$ and the total residue count stays at $O(n)$ regardless
+of how many filters are in scope. Decomposition and action selection
+then work on an expression tree of size $O(n)$ rather than
+$O(n \cdot k)$. The $|p|$ factor in instrumentation remains the
+asymptotic bottleneck per step---unsurprisingly, since pattern
+matching is the work the user is actually paying for.
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main"
+%%% End:

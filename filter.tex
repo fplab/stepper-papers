@@ -1,504 +1,630 @@
-\subsection{Definitions}
+\section{Filtered Stepper Calculus}\label{sec:filter}
 
-\fbox{\(\DefAct a\)} Action \(a\) of a filter
-\[
-  \DefAct a \Coloneqq \FASkip \mid \FAStep
-\]
+We now formalize the filter system as the \emph{Filtered Stepper
+Calculus}. The key idea is that filter annotations in the source
+program are compiled into \emph{residues}---internal markers that
+record what action to take when a step occurs at a given
+sub-expression. At each step, the stepper selects the
+highest-priority residue surrounding the current redex to decide
+whether to show the step or skip it silently. We present the syntax,
+contextual dynamics, metatheoretic properties, and an optional static
+semantics.
 
-\fbox{\(\DefGas g\)} Gas \(g\) of a filter.
-\[
-  \DefGas g \Coloneqq \FGOne \mid \FGAll
-\]
+\subsection{Syntax}
 
-\fbox{\(\DefExp d\)} Expression \(d\).
-\[
-  \DefExp d \Coloneqq x \mid d(d) \mid \Lam{x}{d} \mid d + d \mid \Nat{n} \mid \Filter{p}{a}{g}{d} \mid \Residue{a}{g}{l}{d}
-\]
+The four filter constructs introduced in Section~2 each desugar into a
+\(\Filter{f}{e}\) expression parameterized by a triple \(f = (p, a, g)\)
+of a pattern, an action, and a gas, as shown in
+Table~\ref{tbl:filter-syntax-sugar}.
 
-% \fbox{\(\DefVal d\)} Value \(v\).
-% \[
-%   \DefVal v \Coloneqq \Lam{x}{d} \mid \Nat{n}
-% \]
+\begin{table}[htpb]
+  \caption{Desugaring of filter constructs. Each filter is a triple of
+    a pattern~\(p\), an action~\(a\), and a gas~\(g\).}\label{tbl:filter-syntax-sugar}
+  \begin{tabular}{ll}
+    Hazel code & Desugared form \\
+    \verb|debug hide(p) in e| & \(\Filter{(p, \ActSkip, \GasOne)}{e}\) \\
+    \verb|debug eval(p) in e| & \(\Filter{(p, \ActSkip, \GasAll)}{e}\) \\
+    \verb|debug stop(p) in e| & \(\Filter{(p, \ActStep, \GasOne)}{e}\) \\
+    \verb|debug step(p) in e| & \(\Filter{(p, \ActStep, \GasAll)}{e}\) \\
+  \end{tabular}
+\end{table}
 
-% \mck{I added a value thing here but we should probably actually define it as a judgement instead.}
+The \emph{action} \(a\) determines what happens when a step matches:
+\(\ActStep\) shows the step to the user, \(\ActSkip\) hides it. The
+\emph{gas} \(g\) determines the lifetime of the effect: \(\GasOne\)
+applies to a single step, \(\GasAll\) applies to all steps in the
+evaluation of the matched sub-expression.
 
-\fbox{\(\DefCtx \mathcal{E}\)} Context \(\mathcal{E}\).
-\[
-  \DefCtx \mathcal{E}
-  = \FCMark
-  \mid \mathcal{E}(d)
-  \mid d(\mathcal{E})
-  \mid \mathcal{E} + d
-  \mid d + \mathcal{E}
-  \mid \Filter{p}{a}{g}{l}{\mathcal{E}}
-  \mid \Residue{a}{g}{l}{\mathcal{E}}
-\]
+The full syntax (Fig.~\ref{fig:filter-syntax}) extends the untyped
+lambda calculus with natural numbers, addition, and a fixpoint operator
+\(\Fix{x}{e}\) for recursive definitions. Two expression forms are
+added: \(\Filter{f}{e}\), which the user writes, and
+\(\Residue{a}{g}{l}{e}\), which is generated internally by the
+stepper. A residue marks a sub-expression where a filter has already
+matched, recording the action~\(a\), gas~\(g\), and a
+priority~\(l\)---a natural number reflecting how recently the
+filter was encountered, so that inner filters override outer ones.
 
-% \mck{Maybe replace $\Residue{a}{g}{l}{\mathcal{E}}$ with $\Residue{a}{\FGAll}{l}{\mathcal{E}}$ because only $\FGAll$ is possible?}
+Patterns mirror the expression grammar but add two wildcard forms:
+\(\PatExpr\), which matches any expression, and \(\PatValue\), which
+matches any value.
 
-\fbox{\(\DefPat p\)} Pattern \(p\).
-\[
-  \DefPat p \Coloneqq \$e \mid \$v \mid x \mid p(p) \mid \Lam{x}{d} \mid p + p \mid \Nat{n}
-\]
+\begin{figure}[h]
+  \begin{equation*}
+    \begin{array}{rcl}
+      \DefAct a    &\Coloneqq& \ActSkip \mid \ActStep \\
+      \DefGas g    &\Coloneqq& \GasOne \mid \GasAll \\
+      \DefLvl l    &\Coloneqq& \mathbb{N} \\
+      \DefFilter f &\Coloneqq& (p, a, g) \\
+      \DefExp e    &\Coloneqq& x \mid e(e) \mid \Lam{x}{e} \mid \Fix{x}{e} \mid e + e \mid \Nat{n} \\
+                   &\mid     & \Filter{f}{e} \\
+                   &\mid     & \Residue{a}{g}{l}{e} \\
+      \DefPat p    &\Coloneqq& x \mid p(p) \mid \Lam{x}{p} \mid p + p \mid \Nat{n} \\
+                   &\mid     & \PatExpr \\
+                   &\mid     & \PatValue \\
+    \end{array}
+  \end{equation*}
+  \caption{Syntax of Filtered Stepper Calculus. Here, $n$ ranges over numbers, $x$ ranges over variables, and $l$ ranges over priorities, which are natural numbers.}
+  \label{fig:filter-syntax}
+\end{figure}
 
-% \mck{The $\lambda \$x. $ form actually isn't necessary because we use alpha-equivalence later.}
+\subsection{Contextual Dynamics by Example}
 
-\fbox{\(\DefFilter f\)} Filter \(f\).
-\[
-  \DefFilter f = (p, a, g)
-\]
+Each visible step in the stepper is the result of a multi-phase
+pipeline: \emph{instrumentation}, \emph{optimization},
+\emph{decomposition}, \emph{action selection}, \emph{decay},
+\emph{user interaction}, and \emph{transition and composition}. We introduce each phase
+by tracing one example step of a small program through the pipeline, then
+present the formal rules.
 
-\subsection{Dynamics}
+\begin{minipage}{\linewidth} % Force it onto one page
+Consider the program
 
-\fbox{\(\Value e\)} Expression \(e\) is a value.
+\begin{lstlisting}[language=hazel,xleftmargin=1in]
+debug eval(1 + 2 + 3 + 4) in
+debug stop(3 + 3 + 4) in
+1 + 2 + 3 + 4
+\end{lstlisting}
+\end{minipage}
+which sums the numbers from 1 to 4 left-associatively. The stepper
+implicitly wraps the program in a default \code{debug stop(\$e)} so
+that every step is shown unless an explicit filter says otherwise.
+The three active filters, ordered from outermost to innermost, are
+assigned priorities 0, 1, and 2: outermost gets the lowest priority
+so that inner filters can override outer ones during action
+selection, realizing the lexical-scoping intuition that the
+filter ``closest to'' a redex has the final say. Rule names below
+refer to the formal rules introduced later in this section and in
+Appendix~\ref{sec:standard_rules}.
+
+\paragraph{Instrumentation.}
+The stepper traverses the expression collecting active filters, and
+wraps each sub-expression that matches a filter's pattern in a
+\emph{residue} recording the filter's action, gas, and priority. In
+our example, every sub-expression matches the default
+\code{debug stop(\$e)} (\textsc{I-Add-Y}); the entire sum
+additionally matches \code{debug eval(1 + 2 + 3 + 4)}. Values are
+not wrapped (\textsc{I-V}), since pausing before ``evaluating'' a
+value would not make sense. The third filter, \code{debug stop(3 + 3 + 4)}, does not yet match
+anything---the sub-expression \code{3 + 3 + 4} only appears after
+one reduction step---so it contributes no residue
+(\textsc{I-Add-N}). The
+result, with the surrounding filter prefix elided for brevity, is:
+\begin{lstlisting}[language=hazel]
+@\(
+\prescript{\ActStep}{\GasOne}{\langle}
+\prescript{\ActSkip}{\GasAll}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\)@1 + 2@\({\rangle}^{0}\)@ + 3@\({\rangle}^{0}\)@ + 4@\(\rangle^{1}
+\rangle^{0}\)@
+\end{lstlisting}
+
+\paragraph{Optimization.}
+Adjacent residues are collapsed, keeping only the highest-priority
+one. In our example, the two outermost residues are adjacent;
+\textsc{O-Residue-Inner} drops the outer
+\(\Residue{\ActStep}{\GasOne}{0}{\cdot}\) in favor of the
+higher-priority inner \(\Residue{\ActSkip}{\GasAll}{1}{\cdot}\):
+\begin{lstlisting}[language=hazel]
+@\(
+\prescript{\ActSkip}{\GasAll}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\)@1 + 2@\({\rangle}^{0}\)@ + 3@\({\rangle}^{0}\)@ + 4@\(
+\rangle^{1}
+\)@
+\end{lstlisting}
+
+\paragraph{Decomposition.}
+The expression is split into an evaluation context \(\mathcal{E}\)
+and a selected redex \(e_0\); the relation is non-deterministic,
+as the stepper offers the user a choice of redexes.
+However, this choice is only meaningful when the step will be shown to the user: if the action selection in next step yields \(\ActSkip\), then the stepper will pick one redex deterministically (in practie, the first) and continues.
+Here we select \code{1 + 2} as the redex, yielding the
+evaluation context:
+\begin{lstlisting}[language=hazel]
+@\(
+\prescript{\ActSkip}{\GasAll}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\circ{\rangle}^{0}\)@ + 3@\({\rangle}^{0}\)@ + 4@\(
+\rangle^{1}
+\)@
+\end{lstlisting}
+
+\paragraph{Action selection.}
+Walking outward through the residues surrounding the redex in
+\(\mathcal{E}\), the highest-priority action wins. In our example,
+the two inner residues carry \(\ActStep\) at priority 0 (no
+override of the starting \(\ActStep, 0\)), while the outer residue
+carries \(\ActSkip\) at priority 1 and takes over. The selected
+action is \(\ActSkip\).
+
+\paragraph{Decay, transition, composition.}
+The \(\Decay\) function removes one-shot residues (\(\GasOne\))
+while persistent residues (\(\GasAll\)) survive for future steps;
+the redex is then reduced by an instruction transition and the
+result is plugged back into the decayed context. In our example,
+the persistent \(\GasAll\) residue at priority 1 survives, the
+redex \code{1 + 2} transitions to \code{3} (\textsc{T-Add}), and
+composition yields:
+\begin{lstlisting}[language=hazel]
+@\(\prescript{\ActSkip}{\GasAll}{\langle}\)@3 + 3 + 4@\(\rangle^{1}\)@
+\end{lstlisting}
+
+\paragraph{User interaction and repetition.}
+If the selected action is \(\ActStep\) and the redex is not a filter or residue elimination, the stepper pauses and presents the step to the user; otherwise it skips silently and continues from instrumentation. Because the action in this round was \(\ActSkip\), the stepper does not pause---it recurses. Re-instrumenting \(\Residue{\ActSkip}{\GasAll}{1}{3 + 3 + 4}\), the third filter \code{debug stop(3 + 3 + 4)} now matches the inner sum and inserts a residue at priority 2. Decomposing to select \code{3 + 3} as the redex yields:
+\begin{lstlisting}[language=hazel]
+@\(
+\prescript{\ActSkip}{\GasAll}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\prescript{\ActStep}{\GasOne}{\langle}
+\circ
+\rangle^{0}
+\)@ + 4@\(
+\rangle^{2}
+\rangle^{0}
+\rangle^{1}
+\)@
+\end{lstlisting}
+The priority-2 residue carries action \(\ActStep\) and overrides
+the outer \(\ActSkip\) at priority 1; action selection therefore
+yields \(\ActStep\), and since the redex is not strippable the
+stepper pauses for user input
+(Figure~\ref{fig:simple_example_final_ui}). This means many steps
+may be skipped silently, in different parts of the expression,
+before the stepper pauses for user input.
+
+\begin{figure}[h]
+  \centering
+  \frame{\includegraphics[width=0.4\textwidth]{images/filter-example-user-select.png}}
+  \Description{Stepper UI showing the expression 1 + 2 + 3 + 4 with a highlighted subexpression selection and control buttons.}
+  \caption{Stepper UI at the user-selection step.}\label{fig:simple_example_final_ui}
+\end{figure}
+
+\subsection{Semantics for Contextual Dynamics}\label{sec:dynamics}
+
+We now present the formal rules that define each phase, building
+up to the top-level stepping judgment.
+
+\subsubsection{Instrumentation.} The instrumentation judgment traverses
+an expression, testing each sub-expression against the current filter's
+pattern using the matching judgment \(\Matches{p}{e}\). When a match is found (the ``-Y'' rules), a residue is
+inserted; otherwise (the ``-N'' rules), the sub-expression is left
+unchanged. When a nested filter is encountered, its priority is
+incremented so that inner filters take precedence.
+
+\fbox{\(\InstructPAGL{p}{a}{g}{l}{e}{e'}\)} \(e\) is dynamically instrumented to \(e'\).
 \begin{mathpar}
-  \inferrule[V-Lam]{
-  }{
-    \Value{\Lam{x}{d}}
-  } \qquad
-  \inferrule[V-Nat]{
-  }{
-    \Value{\Nat{n}}
-  }
-\end{mathpar}
-
-\fbox{\([x / v] e = e'\)} \(e'\) can be obtained by substitution of \(x\) for
-\(v\) in \(e\).
-\[
-  \begin{aligned}
-    [x / v] x &= v \\
-    [x / v] y &= y && \text{if } x \neq y \\
-    [x / v] (e_1(e_2)) &= ([x / v] e_1)([x / v] e_2) \\
-    [x / v] \Lam{y}{\tau}{e} &= \Lam{y}{\tau}{[x / v] e} && \text{if } x \neq y \\
-    [x / v] \Lam{y}{\tau}{e} &= \Lam{y}{\tau}{e} && \text{if } x = y \\
-  \end{aligned}
-\]
-\hxf{Do we really need a judgement for substitution?}
-% \begin{mathpar}
-%   \inferrule[S-Var-Eq]{
-%   }{
-%     [x / v] x = v
-%   } \qquad
-%   \inferrule[S-Var-Neq]{
-%     x \neq y
-%   }{
-%     [x / v] y = y
-%   } \\
-%   \inferrule[S-Ap]{
-%   }{
-%     [x / v] (e_1(e_2)) = ([x / v] e_1)([x / v] e_2)
-%   } \\
-%   \inferrule[S-Lam-Eq]{
-%   }{
-%     [x / v] \Lam{x}{\tau}{e} = \Lam{x}{\tau}{e}
-%   } \qquad
-%   \inferrule[S-Lam-Neq]{
-%     x \neq y
-%   }{
-%     [x / v] \Lam{y}{\tau}{e} = \Lam{y}{\tau}{[x / v] e}
-%   } \\
-% \end{mathpar}
-
-\mck{It might be clearer if we write out a separate recompose judgement too. I think decompose and recompose behave differently especially with regard to do statements}
-
-\fbox{\(\Decompose{d}{\mathcal{E}}{d'}\)} Expression \(d\) can be obtained by putting expression \(d'\) into the mark of \(\mathcal{E}\).
-\begin{mathpar}
-  \inferrule[D-Var]{
-  }{
-    \Decompose{x}{\FCMark}{x}
-  } \\
-  \inferrule[D-Residue-I]{
-    \Decompose{e}{\mathcal{E}}{e'}
-  }{
-    \Decompose{\Residue{a}{g}{l}{e}}{\mathcal{E}}{\Residue{a}{g}{l}{e'}}
-  } \\
-  \inferrule[D-Residue-E]{
+  \inferrule[I-V]{
     \Value{v}
   }{
-    \Decompose{\Residue{a}{g}{l}{v}}{\circ}{\Residue{a}{g}{l}{v}}
-  } \\
-  \inferrule[D-Filter-I]{
-    \Decompose{e}{\mathcal{E}}{e'}
-  }{
-    \Decompose{\Filter{p}{a}{g}{e}}{\mathcal{E}}{\Filter{p}{a}{g}{e'}}
-  } \\
-  \inferrule[D-Filter-E]{
-    \Value{v}
-  }{
-    \Decompose{\Residue{p}{a}{g}{v}}{\circ}{\Residue{p}{a}{g}{v}}
-  } \\
-  \inferrule[D-Ap-L]{
-    \Decompose{d_1}{\mathcal{E}_1}{d_1'}
-  }{
-    \Decompose{d_1(d_2)}{\mathcal{E}_1(d_2)}{d_1'}
+    \InstructPAGL{p}{a}{g}{l}{v}{v}
   } \qquad
-  \inferrule[D-Ap-R]{
-    \Value{d_1} \\
-    \Decompose{d_2}{\mathcal{E}_2}{d_2'}
+  \inferrule[I-Var]{
   }{
-    \Decompose{d_1(d_2)}{d_1(\mathcal{E}_2)}{d_2'}
-  } \qquad
-  \inferrule[D-Ap-E]{
-    \Value{e_1} \\
-    \Value{e_2}
-  }{
-    \Decompose{e_1(e_2)}{\circ}{e_1(e_2)}
+    \InstructPAGL{p}{a}{g}{l}{x}{x}
   } \\
-  \inferrule[D-Add-L]{
-    \Decompose{d_1}{\mathcal{E}_1}{d_1'}
+  \inferrule[I-Filter]{
+    \InstructF{(p_0, a_0, g_0, l_0)}{e_0}{e} \\
+    \InstructF{(p, a, g, l_0 + 1)}{e}{e'}
   }{
-    \Decompose{d_1 + d_2}{\mathcal{E}_1 + d_2}{d_1'}
-  } \qquad
-  \inferrule[D-Add-R]{
-    \Value{d_1} \\
-    \Decompose{d_2}{\mathcal{E}_2}{d_2'}
-  }{
-    \Decompose{d_1 + d_2}{d_1 + \mathcal{E}_2}{d_2'}
-  } \qquad
-  \inferrule[D-Add-E]{
-    \Value{e_1} \\
-    \Value{e_2}
-  }{
-    \Decompose{e_1 + e_2}{\circ}{e_1 + e_2}
-  }
-\end{mathpar}
-\mck{D-Filter-E rule does not have any filters in it}
-
-\mck{The last four rules seem to specify an evaluation order - is this desired behaviour? I thought we were going to mention the nondeterminism somewhere in the text}
-
-\mck{Todo: remove the unused `output' g from the above - I think we can also remove the `input` g too?}
-
-\fbox{\(\Compose{d}{\mathcal{E}}{d'}\)} Expression \(d\) can be obtained by putting expression \(d'\) into the mark of \(\mathcal{E}\).
-\begin{mathpar}
-  \inferrule[C-Top]{
-    \ 
-  }{
-    \Compose{e}{\circ}{e}
-  } \qquad
-  \inferrule[C-Ap-L]{
-    \Compose{e_l}{\mathcal{E}}{e}
-  }{
-    \Compose{e_l(e_r)}{\mathcal{E}(e_r)}{e}
-  } \qquad
-  \inferrule[C-Ap-R]{
-    \Compose{e_r}{\mathcal{E}}{e}
-  }{
-    \Compose{e_l(e_r)}{e_l(\mathcal{E})}{e}
+    \InstructF{(p_0, a_0, g_0, l_0)}{\Filter{(p, a, g)}{e_0}}{\Filter{(p, a, g)}{e'}}
   } \\
-  \inferrule[C-Add-L]{
-    \Compose{e_l}{\mathcal{E}}{e}
+  \inferrule[I-Residue]{
+    \InstructF{(p_0, a_0, g_0, l_0)}{e_0}{e} \\
   }{
-    \Compose{e_l + e_r}{\mathcal{E} + e_r}{e}
-  } \qquad
-  \inferrule[C-Add-R]{
-    \Compose{e_r}{\mathcal{E}}{e}
-  }{
-    \Compose{e_l + e_r}{e_l + \mathcal{E}}{e}
+    \InstructF{(p_0, a_0, g_0, l_0)}{\Residue{a}{g}{l}{e_0}}{\Residue{a}{g}{l}{e}}
   } \\
-  \inferrule[C-Filter]{
-    \Compose{e'}{\mathcal{E}}{e}
+  \inferrule[I-Fix]{
+    \
   }{
-    \Compose{\Filter{p}{a}{g}{e'}}{\Filter{p}{a}{g}{\mathcal{E}}}{e}
+    \InstructPAGL{p}{a}{g}{l}{\Fix{x}{e}}{\Fix{x}{e}}
   } \\
-  \inferrule[C-Residue]{
-    \Compose{e'}{\mathcal{E}}{e}
+  \inferrule[I-Ap-Y]{
+    \InstructPAGL{p}{a}{g}{l}{e_1}{e_1'} \\
+    \InstructPAGL{p}{a}{g}{l}{e_2}{e_2'} \\
+    \Matches{p}{e_1(e_2)}
   }{
-    \Compose{\Residue{a}{g}{l}{e'}}{\Residue{a}{g}{l}{\mathcal{E}}}{e}
-  }
+    \InstructPAGL{p}{a}{g}{l}{e_1(e_2)}{\Residue{a}{g}{l}{e_1'(e_2')}}
+  } \\
+  \inferrule[I-Ap-N]{
+    \InstructPAGL{p}{a}{g}{l}{e_1}{e_1'} \\
+    \InstructPAGL{p}{a}{g}{l}{e_2}{e_2'} \\
+    \DoesNotMatch{p}{e_1(e_2)}
+  }{
+    \InstructPAGL{p}{a}{g}{l}{e_1(e_2)}{e_1'(e_2')}
+  } \\
+  \inferrule[I-Add-Y]{
+    \InstructPAGL{p}{a}{g}{l}{e_1}{e_1'} \\
+    \InstructPAGL{p}{a}{g}{l}{e_2}{e_2'} \\
+    \Matches{p}{e_1 + e_2}
+  }{
+    \InstructPAGL{p}{a}{g}{l}{e_1 + e_2}{\Residue{a}{g}{l}{e_1' + e_2'}}
+  } \\
+  \inferrule[I-Add-N]{
+    \InstructPAGL{p}{a}{g}{l}{e_1}{e_1'} \\
+    \InstructPAGL{p}{a}{g}{l}{e_2}{e_2'} \\
+    \DoesNotMatch{p}{e_1 + e_2}
+  }{
+    \InstructPAGL{p}{a}{g}{l}{e_1 + e_2}{e_1' + e_2'}
+  } \\
 \end{mathpar}
 
-\fbox{\(e_1 \equiv_\alpha e_2\)} \(e_1\) is alpha-equivalent to \(e_2\).
-\begin{mathpar}
-  \inferrule[\(\alpha\)-Var]{
-  }{
-    x \equiv_\alpha x
-  } \qquad
-  \inferrule[\(\alpha\)-Lam]{
-    e_1 \equiv_\alpha [x_2/x_1](e_2)
-  }{
-    \Lam{x_1}{\tau_1}{e_1} \equiv_\alpha \Lam{x_2}{\tau_2}{e_2}
-  } \\
-  \inferrule[\(\alpha\)-Ap]{
-    e_1 \equiv_\alpha e_3 \\
-    e_2 \equiv_\alpha e_4
-  }{
-    e_1(e_2) \equiv_\alpha e_3(e_4)
-  } \qquad
-  \inferrule[\(\alpha\)-Add]{
-    e_1 \equiv_\alpha e_3 \\
-    e_2 \equiv_\alpha e_4
-  }{
-    e_1 + e_2 \equiv_\alpha e_3 + e_4
-  } \\
-  \inferrule[\(\alpha\)-Filter]{
-    e_1 \equiv_\alpha e_2
-  }{
-    \Filter{p}{a}{g}{e_1} \equiv_\alpha \Filter{p}{a}{g}{e_2}
-  } \\
-  \inferrule[\(\alpha\)-Residue]{
-    e_1 \equiv_\alpha e_2
-  }{
-    \Residue{a}{g}{l}{e_1} \equiv_\alpha \Residue{a}{g}{l}{e_2}
-  }
-\end{mathpar}
+Instrumentation is the cost center of a step: each step re-instruments
+the entire subtree, and because residues persist across steps, these
+re-instruments leave more and more residues in the expression. and the
+optimization pass below exists to keep that work from compounding across
+steps.
 
-\fbox{\(\Strip{e} = {e'}\)} Strip expression \(e\) to get expression \(e'\).
-\[
-  \begin{aligned}
-    \Strip{x} &= x \\
-    \Strip{\Lam{x}{\tau}{e}} &= \Lam{x}{\tau}{\Strip{e}} \\
-    \Strip{e_1(e_2)} &= (\Strip{e_1})(\Strip{e_2}) \\
-    \Strip{\Nat{n}} &= \Strip{\Nat{b}} \\
-    \Strip{e_1 + e_2} &= (\Strip{e_1}) + (\Strip{e_2}) \\
-    \Strip{\Filter{p}{a}{g}{e}} &= \Strip{e} \\
-    \Strip{\Residue{a}{g}{l}{e}} &= \Strip{e}
-  \end{aligned}
-\]
+\subsubsection{Pattern matching.} The matching judgment determines
+when a sub-expression's structure conforms to a filter's pattern.
+Because filter and residue wrappers are purely instrumental, matching
+ignores them by comparing expression bodies modulo the stripping
+operation defined below.
 
-\fbox{\(\Matches{p}{d}\)} means that pattern \(p\) matches expression \(d\).
+\fbox{\(\Matches{p}{e}\)} Pattern \(p\) matches expression \(e\).
 \begin{mathpar}
   \inferrule[M-All]{\ }{
-    \Matches{\$e}{d}
+    \Matches{\$e}{e}
   } \qquad
   \inferrule[M-Val]{\Value{v}}{
     \Matches{\$v}{v}
-  } \\
+  } \qquad
   \inferrule[M-Nat]{
-    m = n
+    \
   }{
-    \Matches{\Nat{m}}{\Nat{n}}
-  }\qquad
+    \Matches{\Nat{n}}{\Nat{n}}
+  } \\
   \inferrule[M-Lam]{
-    \Lam{x}{\tau_p}{e_p} \equiv_{\alpha} \Lam{y}{\tau_e}{e_e}
+    \Strip{e_1} \equiv \Strip{e_2}
   }{
-    \Matches{\Lam{x}{\tau_p}{e_p}}{\Lam{y}{\tau_e}{e_e}}
-  } \\ 
+    \Matches{\Lam{x_1}{e_1}}{\Lam{x_2}{e_2}}
+  } \qquad
+  \inferrule[M-Fix]{
+    \Strip{e_1} \equiv \Strip{e_2}
+  }{
+    \Matches{\Fix{x_1}{e_1}}{\Fix{x_2}{e_2}}
+  } \\
   \inferrule[M-Ap]{
-    \Matches{p_1}{d_1} \\
-    \Matches{p_2}{d_2}
+    \Matches{p_1}{e_1} \\
+    \Matches{p_2}{e_2}
   }{
-    \Matches{p_1(p_2)}{d_1(d_2)}
+    \Matches{p_1(p_2)}{e_1(e_2)}
   } \qquad
   \inferrule[M-Add]{
-    \Matches{p_1}{d_1} \\
-    \Matches{p_2}{d_2}
+    \Matches{p_1}{e_1} \\
+    \Matches{p_2}{e_2}
   }{
-    \Matches{p_1 + p_2}{d_1 + d_2}
-  } \qquad
-\end{mathpar}
-
-\mck{M-Lam doesn't allow \$e inside function bodies - is this intentional?}
-
-\fbox{\(\FInstruct{(p, a, g, l)}{d}{d'}\)} \(d\) is dynamically instructed to \(d'\).
-\begin{mathpar}
-  \inferrule[FI-V]{
-    \Value{d}
-  }{
-    \FInstruct{(p, a, g, l)}{d}{d}
-  } \\
-  \inferrule[FI-Var-Y]{
-    \FPatMatchesExp{p}{x}
-  }{
-    \FInstruct{(p, a, g, l)}{x}{\Residue{a}{g}{l}{x}}
-  } \qquad
-  \inferrule[FI-Var-N]{
-    \FPatNotMatchesExp{p}{x}
-  }{
-    \FInstruct{(p, a, g, l)}{x}{x}
-  } \\
-  \inferrule[FI-I]{
-    \FInstruct{(p_0, a_0, g_0, l_0)}{d_0}{d} \\
-    \FInstruct{(p, a, g, l_0 + 1)}{d}{d'}
-  }{
-    \FInstruct{(p_0, a_0, g_0, l_0)}{\Filter{p}{a}{g}{d_0}}{\Filter{p}{a}{g}{d'}}
-  } \\
-  \inferrule[FI-T]{
-    \FInstruct{(p_0, a_0, g_0, l_0)}{d_0}{d} \\
-  }{
-    \FInstruct{(p_0, a_0, g_0, l_0)}{\Residue{a}{g}{l}{d_0}}{\Residue{a}{g}{l}{d'}}
-  } \\
-  \inferrule[FI-Ap-Y]{
-    \FInstruct{(p, a, g, l)}{d_1}{d_1'} \\
-    \FInstruct{(p, a, g, l)}{d_2}{d_2'} \\
-    \FPatMatchesExp{p}{d_1(d_2)}
-  }{
-    \FInstruct{(p, a, g, l)}{d_1(d_2)}{\Residue{a}{g}{l}{d_1'(d_2')}}
-  } \\
-  \inferrule[FI-Ap-N]{
-    \FInstruct{(p, a, g, l)}{d_1}{d_1'} \\
-    \FInstruct{(p, a, g, l)}{d_2}{d_2'} \\
-    \FPatNotMatchesExp{p}{d_1(d_2)}
-  }{
-    \FInstruct{(p, a, g, l)}{d_1(d_2)}{d_1'(d_2')}
-  } \\
-  \inferrule[FI-Add-Y]{
-    \FInstruct{(p, a, g, l)}{d_1}{d_1'} \\
-    \FInstruct{(p, a, g, l)}{d_2}{d_2'} \\
-    \FPatMatchesExp{p}{d_1 + d_2}
-  }{
-    \FInstruct{(p, a, g, l)}{d_1(d_2)}{\Residue{a}{g}{l}{d_1' + d_2'}}
-  } \\
-  \inferrule[FI-Add-N]{
-    \FInstruct{(p, a, g, l)}{d_1}{d_1'} \\
-    \FInstruct{(p, a, g, l)}{d_2}{d_2'} \\
-    \FPatNotMatchesExp{p}{d_1 + d_2}
-  }{
-    \FInstruct{(p, a, g, l)}{d_1(d_2)}{d_1' + d_2'}
+    \Matches{p_1 + p_2}{e_1 + e_2}
   }
 \end{mathpar}
 
-\mck{I think there's some preservation of priority property to prove here, since the numbers are re-generated on every pass.}
+\subsubsection{Stripping.} The strip operation erases all filter and
+residue wrappers from an expression. It is used by \textsc{M-Lam} and
+\textsc{M-Fix} to compare expression bodies modulo instrumentation.
 
-\mck{This instrumentation will regenerate the do statements on every pass - I guess it doesn't cause problems but it would be nice if it didn't?}
+\fbox{\(\Strip{e} = {e'}\)} Strip filter and residue wrappers from expression \(e\).
+\[
+  \begin{aligned}
+    \Strip{x} &= x \\
+    \Strip{\Lam{x}{e}} &= \Lam{x}{\Strip{e}} \\
+    \Strip{(e_1(e_2))} &= (\Strip{e_1})(\Strip{e_2}) \\
+    \Strip{\Nat{n}} &= \Nat{n} \\
+    \Strip{(e_1 + e_2)} &= (\Strip{e_1}) + (\Strip{e_2}) \\
+    \Strip{(\Filter{f}{e})} &= \Strip{e} \\
+    \Strip{\Residue{a}{g}{l}{e}} &= \Strip{e} \\
+    \Strip{\Fix{x}{e}} &= \Fix{x}{\Strip{e}}
+  \end{aligned}
+\]
 
-\fbox{\(\Analyze{(a, l)}{\mathcal{E}}{\mathcal{E}'}{a'}\)} Under the filter environment of \((a, l)\), the context \(\mathcal{E}\) is transitioned to \(\mathcal{E}'\) and the action \(a'\) is returned.
+\subsubsection{Decay.} After a step is taken, one-shot residues
+(\(\GasOne\)) are removed while persistent residues (\(\GasAll\)) are
+preserved for future steps:
+
+\fbox{\(\Decay{\mathcal{E}} = \mathcal{E}'\)} Evaluation context \(\mathcal{E}\) decays to context \(\mathcal{E}'\).
+\[
+  \begin{aligned}
+    \Decay{x} &= x \\
+    \Decay{\Lam{x}{e}} &= \Lam{x}{\Decay{e}} \\
+    \Decay{e_1(e_2)} &= (\Decay{e_1})(\Decay{e_2}) \\
+    \Decay{\Nat{n}} &= \Nat{n} \\
+    \Decay{e_1 + e_2} &= (\Decay{e_1}) + (\Decay{e_2}) \\
+    \Decay{\Filter{(p, a, g)}{e}} &= \Filter{(p, a, g)}{\Decay{e}} \\
+    \Decay{\Residue{a}{\GasOne}{l}{e}} &= \Decay{e} \\
+    \Decay{\Residue{a}{\GasAll}{l}{e}} &= \Residue{a}{\GasAll}{l}{\Decay{e}}
+  \end{aligned}
+\]
+
+\subsubsection{Action selection.} The analysis judgment walks outward
+through the evaluation context, comparing residue priorities to
+determine whether to step or skip. When a residue has higher priority
+than the current action, it takes over; otherwise, the existing action
+is kept:
+
+\fbox{\(\Analyze{(a, l)}{\mathcal{E}}{a'}\)} Under action \((a, l)\), context \(\mathcal{E}\) yields action \(a'\).
 \begin{mathpar}
   \inferrule[A-Var]{
   }{
-    \Analyze{(a, l)}{\circ}{\circ}{a}
+    \Analyze{(a, l)}{\circ}{a}
   } \\
   \inferrule[A-Ap-L]{
-    \Analyze{(a, l)}{\mathcal{E}_1}{\mathcal{E}_1'}{a'}
+    \Analyze{(a, l)}{\mathcal{E}_1}{a'}
   }{
-    \Analyze{(a, l)}{\mathcal{E}_1(d)}{\mathcal{E}_1'(d)}{a'}
+    \Analyze{(a, l)}{\mathcal{E}_1(e)}{a'}
   } \qquad
   \inferrule[A-Ap-R]{
-    \Analyze{(a, l)}{\mathcal{E}_2}{\mathcal{E}_2'}{a'}
+    \Analyze{(a, l)}{\mathcal{E}_2}{a'}
   }{
-    \Analyze{(a, l)}{d_1(\mathcal{E}_2)}{d_1(\mathcal{E}_2')}{a'}
+    \Analyze{(a, l)}{e_1(\mathcal{E}_2)}{a'}
   } \\
   \inferrule[A-Add-L]{
-    \Analyze{(a, l)}{\mathcal{E}_1}{\mathcal{E}_1'}{a'}
+    \Analyze{(a, l)}{\mathcal{E}_1}{a'}
   }{
-    \Analyze{(a, l)}{\mathcal{E}_1 + d}{\mathcal{E}_1' + d}{a'}
+    \Analyze{(a, l)}{\mathcal{E}_1 + e}{a'}
   } \qquad
   \inferrule[A-Add-R]{
-    \Analyze{(a, l)}{\mathcal{E}_2}{\mathcal{E}_2'}{a'}
+    \Analyze{(a, l)}{\mathcal{E}_2}{a'}
   }{
-    \Analyze{(a, l)}{d_1 + \mathcal{E}_2}{d_1 + \mathcal{E}_2'}{a'}
+    \Analyze{(a, l)}{e_1 + \mathcal{E}_2}{a'}
   } \\
   \inferrule[A-Filter]{
-    \Analyze{(a, l)}{\mathcal{E}}{\mathcal{E}'}{a'}
+    \Analyze{(a, l)}{\mathcal{E}}{a'}
   }{
-    \Analyze{(a, l)}{\Filter{p}{a}{g}{\mathcal{E}}}{\Filter{p}{a}{g}{\mathcal{E}'}}{a'}
+    \Analyze{(a, l)}{\Filter{f}{\mathcal{E}}}{a'}
   } \\
   \inferrule[A-Residue-One-Old]{
     l \le l_0 \\
-    \Analyze{(a_0, l_0)}{\mathcal{E}}{\mathcal{E}'}{a'}
+    \Analyze{(a_0, l_0)}{\mathcal{E}}{a'}
   }{
-    \Analyze{(a_0, l_0)}{\Residue{a}{\FGOne}{l}{\mathcal{E}}}{\Residue{a}{\FGOne}{l}{\mathcal{E}'}}{a'}
-  } \\
+    \Analyze{(a_0, l_0)}{\Residue{a}{\GasOne}{l}{\mathcal{E}}}{a'}
+  } \qquad
   \inferrule[A-Residue-One-New]{
     l > l_0 \\
-    \Analyze{(a, l)}{\mathcal{E}}{\mathcal{E}'}{a'}
+    \Analyze{(a, l)}{\mathcal{E}}{a'}
   }{
-    \Analyze{(a_0, l_0)}{\Residue{a}{\FGOne}{l}{\mathcal{E}}}{\Residue{a}{\FGOne}{l}{\mathcal{E}'}}{a'}
+    \Analyze{(a_0, l_0)}{\Residue{a}{\GasOne}{l}{\mathcal{E}}}{a'}
   } \\
   \inferrule[A-Residue-All-Old]{
     l \le l_0 \\
-    \Analyze{(a_0, l_0)}{\mathcal{E}}{\mathcal{E}'}{a'}
+    \Analyze{(a_0, l_0)}{\mathcal{E}}{a'}
   }{
-    \Analyze{(a_0, l_0)}{\Residue{a}{\FGAll}{l}{\mathcal{E}}}{\Residue{a}{\FGAll}{l}{\mathcal{E}'}}{a'}
-  } \\
+    \Analyze{(a_0, l_0)}{\Residue{a}{\GasAll}{l}{\mathcal{E}}}{a'}
+  } \qquad
   \inferrule[A-Residue-All-New]{
     l > l_0 \\
-    \Analyze{(a, l)}{\mathcal{E}}{\mathcal{E}'}{a'}
+    \Analyze{(a, l)}{\mathcal{E}}{a'}
   }{
-    \Analyze{(a_0, l_0)}{\Residue{a}{\FGAll}{l}{\mathcal{E}}}{\Residue{a}{\FGAll}{l}{\mathcal{E}'}}{a'}
+    \Analyze{(a_0, l_0)}{\Residue{a}{\GasAll}{l}{\mathcal{E}}}{a'}
+  } \\
+\end{mathpar}
+
+The remaining judgments---evaluation contexts, values, substitution, decomposition
+(\fbox{\(\Decompose{e}{\mathcal{E}}{e'}\)}), composition
+(\fbox{\(\Compose{e}{\mathcal{E}}{e'}\)}), and instruction transition
+(\fbox{\(\Transition{e}{e'}\)})---are standard extensions of
+the lambda calculus with filter and residue frames.
+The full rules are given in Appendix~\ref{sec:standard_rules}.
+
+\subsubsection{Optimization.} Instrumentation can stack adjacent
+residues around a single redex when several nested filters match it,
+and those residues persist into the next step. The optimization pass
+collapses adjacent residues to the highest-priority survivor at each
+nesting level---the same residue that action selection would have
+consulted---so the collapse is observationally invisible. We discuss
+the cost of instrumentation and the asymptotic effect of this pass in
+Section~\ref{sec:impl-perf}.
+
+\fbox{\(\IsResidue{e}\)} \(e\) is a residue.
+\begin{mathpar}
+  \inferrule[Is-Residue]{
+    \
+  }{
+    \IsResidue{\Residue{a}{g}{l}{e}}
   }
 \end{mathpar}
 
-\fbox{\(\FTrans{d}{d'}\)} \(d\) takes an transition to \(d'\).
+\fbox{\(\Optimize{e}{e'}\)} \(e\) is optimized to \(e'\)
 \begin{mathpar}
-  \inferrule[FTLam]{
-    \Value{d_2}
+  \inferrule[O-Var]{
+    \
   }{
-    \FTrans{\Lam{x}{d_1}(d_2)}{\FSubst{d_2}{x}{d_1}}
+    \Optimize{x}{x}
+  } \quad
+  \inferrule[O-Val]{
+    \Value{e}
+  }{
+    \Optimize{e}{e}
   } \\
-  \inferrule[FTNat]{
-    n_1 + n_2 = n
+  \inferrule[O-Ap]{
+    \Optimize{e_l}{e_l'} \\
+    \Optimize{e_r}{e_r'}
   }{
-    \FTrans{\Nat{n_1} + \Nat{n_2}}{\Nat{n}}
+    \Optimize{e_l(e_r)}{e_l'(e_r')}
+  } \quad
+  \inferrule[O-Add]{
+    \Optimize{e_l}{e_l'} \\
+    \Optimize{e_r}{e_r'}
+  }{
+    \Optimize{e_l + e_r}{e_l' + e_r'}
   } \\
-  \text{\mck{Is FLRes-T redundant since we're using evaluation contexts?}}\\
-  \inferrule[FLRes-T]{
-    \FTrans{d}{d'}
+  \inferrule[O-Filter]{
+    \Optimize{e}{e'}
   }{
-    \FTrans{\Residue{a}{g}{d}}{\Residue{a}{g}{d'}}
+    \Optimize{\Filter{f}{e}}{\Filter{f}{e'}}
   } \\
-  \inferrule[\textcolor{red}{FLRes-Inst}]{
-    \Value{v}
+  \inferrule[O-Residue-Inner]{
+    l_i > l_o \\
+    \Optimize{\Residue{a_i}{g_i}{l_i}{e}}{e'}
   }{
-    \FTrans{\Residue{a}{g}{l}{d}}{v}
+    \Optimize{\Residue{a_o}{g_o}{l_o}{\Residue{a_i}{g_i}{l_i}{e}}}{e'}
+  } \quad
+  \inferrule[O-Residue-Outer]{
+    l_i \leq l_o \\
+    \Optimize{\Residue{a_o}{g_o}{l_o}{e}}{e'}
+  }{
+    \Optimize{\Residue{a_o}{g_o}{l_o}{\Residue{a_i}{g_i}{l_i}{e}}}{e'}
+  } \quad
+  \inferrule[O-Residue-Other]{
+    \neg{(\IsResidue{e})} \\
+    \Optimize{e}{e'}
+  }{
+    \Optimize{\Residue{a}{g}{l}{e}}{\Residue{a}{g}{l}{e'}}
+  } \\
+  \inferrule[O-Fix]{
+    \
+  }{
+    \Optimize{\Fix{x}{e}}{\Fix{x}{e}}
+  }
+\end{mathpar}
+
+\subsubsection{Stepping judgment.} With all the pieces in place, the
+top-level stepping judgment ties the pipeline together.
+\textsc{S-Step} fires when action selection yields \(\ActStep\) and
+the redex is not a filter/residue elimination (checked by
+\(\Strippable{}\)); the step is shown to the user. \textsc{S-Skip}
+fires otherwise: the step is performed silently and stepping continues
+recursively.
+
+\fbox{\(\Strippable{e}\)} Expression \(e\) is a filter or residue wrapper.
+\begin{mathpar}
+  \inferrule[F-Filter]{
+  }{
+    \Strippable{(\Filter{f}{e})}
   } \qquad
-  \inferrule[\textcolor{red}{FLRes-Filter}]{
+  \inferrule[F-Residue]{
+  }{
+    \Strippable{\Residue{a}{g}{l}{e}}
+  }
+\end{mathpar}
+
+\fbox{\(\Step{e}{e'}{n}\)} Expression \(e\) steps to \(e'\) in \(n\) steps.
+\begin{mathpar}
+  \inferrule[S-Step]{
+    \InstructPAGL{\PatExpr}{\ActStep}{\GasOne}{0}{e}{e_i} \\
+    \Decompose{e_i}{\mathcal{E}_0}{e_0} \\
+    \Analyze{(\ActStep, 0)}{\mathcal{E}_0}{\ActStep} \land{} \neg{} (\Strippable{e_0}) \\
+    \Transition{e_0}{e_t} \\
+    \Compose{e_1}{(\Decay{\mathcal{E}_1})}{e_t}
+  }{
+    \Step{e}{e_1}{1}
+  } \\
+  \inferrule[S-Skip]{
+    \InstructPAGL{\PatExpr}{\ActStep}{\GasOne}{0}{e}{e_i} \\
+    \Decompose{e_i}{\mathcal{E}_0}{e_0} \\
+    \Analyze{(\ActStep, 0)}{\mathcal{E}_0}{\ActSkip} \lor \Strippable{e_0}\\
+    \Transition{e_0}{e_t} \\
+    \Compose{e_1}{(\Decay{\mathcal{E}_1})}{e_t} \\
+    \Step{e_1}{e_2}{n}
+  }{
+    \Step{e}{e_2}{n + 1}
+  } \\
+  \inferrule[S-Value]{
     \Value{v}
   }{
-    \FTrans{\Filter{a}{g}{d}}{v}
+    \Step{v}{v}{0}
   }
 \end{mathpar}
 
-\mck{ok yeah it would be nice to have a progress property here but I guess we do need types for that...}
+\subsection{Properties}
 
-\fbox{\(\FStep{(a, g)}{d}{d'}\)} Expression \(d\) steps to expression \(d'\).
+Because the Filtered Stepper Calculus layers filter and residue annotations on
+top of a standard reduction calculus, we want to confirm that these additions
+are \emph{conservative}: they should not break the guarantees of the underlying
+language. Preservation (Theorem~\ref{thm:preservation}) ensures that every
+intermediate state the stepper shows the user has the same type as the original
+expression, so the displayed evaluation remains coherent; Progress
+(Theorem~\ref{thm:progress}) ensures that the stepper does not introduce new
+stuck states for well-typed programs; and Simulation
+(Theorem~\ref{thm:simulation}) ensures that the filter machinery only controls
+\emph{which} steps are shown, not which reductions are possible, so the
+underlying evaluation behavior matches the base Untyped Lambda Calculus.
+Preservation and Progress are classically stated over a typed language, so we
+state them for a typed variant of the Filtered Stepper Calculus that extends
+the syntax with natural number and arrow types; the typing judgment
+\(\TypeEntails{\Gamma}{e}{\tau}\) and the rules for expressions and patterns
+are standard, with the full static semantics given in
+Appendix~\ref{sec:statics}.
+
+\begin{theorem}[Preservation]\label{thm:preservation}
+  If an expression has type \(\tau\), then after stepping, the stepped expression also has type \(\tau\).
+  \[
+    \forall e, \tau, n, \Gamma, \qquad
+    \TypeEntails{\Gamma}{e}{\tau} \land \Step{e}{e'}{n} \implies \TypeEntails{\Gamma}{e'}{\tau}
+  \]
+\end{theorem}
+
+\begin{theorem}[Progress]\label{thm:progress}
+  If an expression is well-typed, then there exists an \(n\) such that the expression can be stepped for \(n\) steps.
+  \[
+    \forall e, \tau, \qquad
+    \TypeEntails{\varnothing}{e}{\tau} \implies \exists e' . \Step{e}{e'}{1}
+  \]
+\end{theorem}
+
+To state the simulation theorem, we define an unfiltered stepping
+judgment that ignores all filter and residue annotations:
+
+\fbox{\(\JustStep{e}{e'}{n}\)} Expression \(e\) takes \(n\) steps to \(e'\), ignoring filters and residues.
 \begin{mathpar}
-  \inferrule[FS-Step]{
-    \FInstruct{(a, g, 0)}{d}{d_i} \\
-    \Decompose{d_i}{\mathcal{E}}{d_0} \\
-    \FTrans{d_0}{d_0'} \\
-    \Compose{d'}{\mathcal{E}}{d_0'}
+  \inferrule[J-Step]{
+    \Decompose{e}{\mathcal{E}_0}{e_0} \\
+    \Transition{e_0}{e_0'} \\
+    \Compose{e'}{\mathcal{E}_0}{e_0'}
   }{
-    \FStep{(p, a, g)}{d}{d'}
-  } \\
-  \inferrule[FS-Skip]{
-    \FInstruct{(a, g, 0)}{d}{d_i} \\
-    \Decompose{d_i}{\mathcal{E}}{d_0} \\
-    \FTrans{d_0}{d_0'} \\
-    \Compose{d'}{\mathcal{E}}{d_0'} \\
-    \FStep{(a, g)}{d'}{d''}
-  }{
-    \FStep{(a, g)}{d}{d''}
+    \JustStep{e}{e'}{1}
   }
 \end{mathpar}
 
-\mck{Does this work with 0-step evaluations e.g. skip \$e in 1 + 2 + 3}
+\begin{theorem}[Simulation]\label{thm:simulation}
+  If an expression \(e\) takes \(n\) steps to become \(e'\), then the stripped-down version of \(e\), which is \(\Strip{e}\), will take \(m\) steps to become \(\Strip{e'}\) for some \(m\).
+  \[
+    \forall e, n, e', \qquad
+    \Step{e}{e'}{n} \implies \exists m, \JustStep{\Strip{e}}{\Strip{e'}}{m}
+  \]
+\end{theorem}
 
-\TODO{Properties}
-\\\\
-Conjecture: Idempotence of Instrumentation (Instrumenting twice should have the same effect as instrumenting once)
+Preservation and progress hold for a typed variant of the calculus
+that extends the syntax with natural number and arrow types. The
+typing rules for expressions and patterns are standard; the full
+static semantics are given in Appendix~\ref{sec:statics}.
 
-$\FInstruct{(p, a, g, l)}{d}{d'} \Rightarrow \FInstruct{(p, a, g, l)}{d'}{d''} \Rightarrow d' = d''$
+\subsection{Agda Mechanization}
 
-\mck{This conjecture is actually not true, because instrumentation always adds more do statements, even if they're already there.}
-\\\\
-Conjecture : Determinism of steps
-
-$\FStep{(a, g)}{d}{d'} \Rightarrow \FStep{(a, g)}{d}{d''} \Rightarrow d' = d''$
-
-\mck{I think this holds in this calculus, but not in Hazel itself.}
-\\\\
-Conjecture(Unchanging Priorities)
-
-???
-
-\mck{Since priorities are always re-numbered, we want some sort of conjecture that they remain the same. We could even possibly use this to avoid duplication of `do's?}
-\\\\
-Conjecture(Correctness)
-
-
-
-
-\subsection{Statics}
-
-\TODO{Get filter a simple type system like STLC}
-
-\TODO{Gas is not useful in return}
-
-\TODO{Better notation for do's statements}
-
-
+We mechanize both the dynamic and static semantics of the stepper
+calculus in Agda, as well as the proofs of the preservation, progress,
+and simulation properties stated above. We use de Bruijn indices to
+implement \(\alpha\)-equivalence during the filter-matching process.
+To mitigate the complexity of de Bruijn indices, we fuse the
+operations of substitution and function application into a single
+function, eliminating many structurally possible but invalid states
+(for example, shifting down a variable with index 0). Additionally,
+we use well-founded recursion to prove termination of the
+instrumentation and optimization passes.
 
 %%% Local Variables:
-%%% mode: latex
+%%% mode: LaTeX
 %%% TeX-master: "main"
 %%% End:

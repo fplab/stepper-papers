@@ -1,0 +1,99 @@
+% !TEX root = ./main.tex
+
+To evaluate how our filtered calculus helps with teachers and students during the learning of functional programming language,
+we have integrated it into a course that works with functional programming languages at a university.
+
+% \subsection{Lecture Integration}
+
+\TODO{Lecture Integrations}
+
+% \subsection{Assignment Integration}
+
+The assignments we evaluated our stepper on usually consist of several tasks, each tasks ask students to implement or complete a function to pass given unit tests. To help students better focus on their task, we have provided some prelude Hazel definitions that students can directly use in their assignments. We do not want the students to be able to inspect the evaluation of the prelude program, as this would break the imaginary narrative that all these prelude content already exists in the environment. Therefore, we insert a \lstinline[language=hazel]{debug hide($e)} at the very top of the program, and a \lstinline[language=hazel]{debug stop($e)} before the user program. Whenever the user turn the stepper on, it will skip the execution of the prelude section and stop at the entrance of the user program.
+
+We have collected anonymous data from students during one of their
+assignments. The number of steps used by students is shown in the
+Figure~\ref{fig:eval-num-steps}.
+
+\begin{figure}[ht]
+  \centering
+  \begin{minipage}{.40\linewidth}
+    \begin{subfigure}{\linewidth}
+      \includegraphics[width=\textwidth]{images/data-steps-2024-w24-a1.png}
+      \caption{Winter 2024, sample size 33}
+      \label{fig:eval-num-steps-w24}
+    \end{subfigure}
+  \end{minipage}
+  \quad
+  \begin{minipage}{.40\linewidth}
+    \begin{subfigure}{\linewidth}
+      \includegraphics[width=\textwidth]{images/data-steps-2024-f24-a1.png}
+      \caption{Fall 2024, sample size 20}
+      \label{fig:eval-num-steps-f24}
+    \end{subfigure}
+  \end{minipage}
+  \caption{Number of steps used by students}
+  \label{fig:eval-num-steps}
+\end{figure}
+
+The first observation we made is, these students were never explicitly
+told anything about how to use the stepper, and they weren't told to
+use the stepper at any point in the homework, but almost half of them
+saw the instructor use it in lecture and decided they wanted to use it.
+
+However, as we can see, the number of steps used by students roughly
+conforms to a exponential distribution. This implies a small portion
+of students use the stepper extensively, while most of the students
+just briefly tried it or not using it at all.
+
+To complement the usage data, we administered an anonymous end-of-term
+survey to the same cohort. Of 25 respondents, 20 reported using the
+stepper and 12 of those adopted at least one of the
+\lstinline[language=hazel]{skip}, \lstinline[language=hazel]{eval},
+\lstinline[language=hazel]{pause}, or \lstinline[language=hazel]{debug}
+keywords; the Likert responses are summarized in
+Table~\ref{tab:eval-survey-likert}. We classify usage using the direct
+usage question and summarize Likert responses only for respondents who
+reported using the stepper.
+
+\begin{table}[ht]
+  \centering
+  \caption{Self-reported experience with the stepper among users, Strongly/Somewhat collapsed ($n=20$).}
+  \label{tab:eval-survey-likert}
+  \begin{tabular}{lccc}
+    \toprule
+    Statement (paraphrased) & Agree & Neither & Disagree \\
+    \midrule
+    Difficult to read                       & 5  & 4 & 11 \\
+    Surprised by green highlighting         & 9  & 7 & 4  \\
+    Helped identify or correct bugs         & 12 & 5 & 3  \\
+    Helped understand Hazel's features      & 13 & 6 & 1  \\
+    Long and tedious to interact with       & 7  & 5 & 8  \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Three observations triangulate with the usage data. First, the
+strongest positive response (13 vs.\ 1) is for \emph{understanding}
+language features rather than bug-finding (12 vs.\ 3), and the
+free-text ``what did you use it for?'' question agrees: ``understanding
+how Hazel evaluates'' is mentioned slightly more often than
+``debugging,'' consistent with the stepper's substitution-based,
+source-level design. Second, readability is not the issue (11 vs.\ 5),
+but ``long and tedious'' splits evenly (7 vs.\ 8) and tracks the
+long-tailed shape of Figure~\ref{fig:eval-num-steps}; the
+12-of-20 adoption rate of the filter keywords suggests students
+reach for filters as friction reduction, as designed. Third, the
+green-highlighting question drew nearly half the users to agree
+(9 of 20), indicating that the lexical scoping of filters is not
+self-evident in the current source-text-only interface---motivation
+for the graphical filter panel discussed as future work.
+
+The survey is small ($n=25$), single-cohort, voluntary, and
+self-report; one respondent reported uniformly negative experiences
+attributed to bugs in the deployed prototype.
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main"
+%%% End:

@@ -1,0 +1,70 @@
+
+\paragraph{Algebraic steppers.}
+Algebraic steppers for functional languages have long served pedagogy. The
+DrScheme/Racket algebraic stepper presents small-step reductions that mirror
+operational semantics, with formal correctness arguments for its
+traces~\cite{clements2001stepper}. Cong and Asai showed how delimited
+continuations can implement such steppers for ML-like
+languages~\cite{cong2016stepper}, a line continued in steppers for practical
+OCaml fragments that handle effectful constructs such as exceptions and
+printing primitives~\cite{furukawa2019stepping}, and most recently extended to
+simple modules with hierarchical variable references~\cite{asai2025modules}.
+Our work keeps this source-level, semantics-directed view of evaluation, but
+adds scoped, pattern-based control over which reductions appear in the trace.
+
+\paragraph{Programmer-directed focus.}
+Bertot's occurrence-based debugger specifications and Bernstein and Stark's
+focusing debugger formalize how users can direct debugging attention to
+particular source-level occurrences~\cite{bertot1991occurrences,bernstein1995focusing}. Algorithmic debugging, going back to
+Shapiro~\cite{shapiro1983algorithmic} and continuing through modern Haskell
+instantiations such as Hoed~\cite{faddegon2015hoed}, achieves user-directed
+focus through oracle questioning: the programmer's yes/no answers about
+subcomputation correctness successively narrow the debugger's attention to
+the buggy subtree. Interrogative debugging via the Whyline takes a
+complementary approach, generating a menu of ``why did'' and ``why didn't''
+questions that the user selects to highlight relevant runtime
+events~\cite{ko2004whyline}. Expositor exposes execution traces as first-class
+values that programmers can script with \texttt{map} and \texttt{filter} to
+direct focus~\cite{khoo2013expositor}. Hazel filters extend this lineage with
+redex-structural patterns that compose through lexical scope and integrate
+with an algebraic stepper.
+
+\paragraph{Tracing tools for functional languages.}
+Tracing tools record the reduction history of a computation for later
+inspection. An early source-level debugger from Standard ML by Tolmach and Appel used source-to-source instrumentation and first-class continuations to provide breakpoints and reverse execution (time-traveling) without depending on the machine representation~\cite{tolmach1995debugger}.
+Hood lets programmers insert \texttt{observe} annotations to
+capture intermediate values without altering program
+semantics~\cite{gill2000hood}. Hat records an \emph{augmented redex trail} and
+provides multiple views over it, including search and structured
+querying~\cite{wallace2001hat}. The GHCi debugger brought interactive
+source-level breakpoints to lazy Haskell via lightweight bytecode
+instrumentation~\cite{marlow2007ghci}. More recently, CSI:~Haskell extends
+GHC's coverage tooling to record evaluation traces alongside the call stack,
+reconstructing the chain of events leading to a fault in lazy
+code~\cite{gissurarson2023csi}. Our stepper similarly maintains a step
+history, but the trace is \emph{filtered} by user-specified patterns rather
+than recorded uniformly.
+
+\paragraph{Pattern languages and term-rewriting strategies.}
+Our filter language is also related to program-pattern and
+strategy-controlled term-processing systems. SCRUPLE and ASTLOG use structural
+patterns to query program trees~\cite{paul1994scruple,crew1997astlog}.
+Stratego separates rewrite rules from strategies that control where and how
+rules are applied~\cite{visser2001stratego}. Coccinelle's \emph{semantic
+patches} generalize Unix-style patches to a structural pattern language over
+C, and have driven thousands of automated evolutions in the Linux
+kernel~\cite{padioleau2008coccinelle}. Hazel filters use a smaller pattern
+language and do not let users change the evaluator; instead, patterns control
+the visibility of steps produced by a fixed algebraic stepper.
+
+\paragraph{Hazel substrate.}
+Hazelnut-style structural editing and semantics for incomplete programs make
+the AST explicit at all times, which naturally supports tree-pattern matching
+and stepping in the presence of holes~\cite{omar2017hazelnut,omar2019live}. The substrate has since
+been extended with typed pattern holes that enable live evaluation in the
+presence of incomplete match expressions~\cite{yuan2023peanut}, and with the
+marked lambda calculus that gives a total account of type error
+localization and recovery, providing the foundation on which modern Hazel is
+built~\cite{zhao2024marking}. The filter calculus builds on this substrate to
+give a precise semantics for scoped, pattern-based stepping control in a live
+functional environment.

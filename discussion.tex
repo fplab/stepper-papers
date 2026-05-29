@@ -1,0 +1,48 @@
+We have presented the Filtered Stepper Calculus, a formal framework
+for scoped, pattern-based control over which reduction steps are
+visible during algebraic stepping. The calculus is backed by
+mechanized proofs of preservation, progress, and simulation in Agda,
+and is implemented in the Hazel live programming environment, where it
+has been deployed in a university programming languages course.
+
+\paragraph{Stepper adoption.}
+Our evaluation shows that students adopted the stepper organically:
+without being instructed to use it, nearly half of the students who
+observed the stepper in lecture chose to use it on their assignments.
+This suggests that an algebraic stepper that mirrors the
+substitution-based reasoning taught in class fills a genuine need
+in the pedagogical workflow.
+
+\paragraph{Filter adoption.}
+By contrast, we observed limited student use of the filter system
+during assignments. We attribute this to three factors. First, the
+current interface requires users to write filter annotations directly
+in their program text, which is unfamiliar syntax and adds friction.
+Second, inserting a filter currently triggers re-elaboration of the
+entire program, introducing noticeable latency. Third, students
+working on assignments are focused on correctness rather than trace
+exploration, so the cost of learning the filter language may not be
+justified in that context.
+
+% NOTE: Taken out for no lecture integration.
+% Notably, the filter system proved more
+% useful in lectures, where the instructor prepared filters in advance
+% to highlight specific aspects of evaluation for the class.
+
+\paragraph{Future work.}
+
+The filter adoption findings point to a clear design direction:
+separating the filter interface from the program text. We envision
+a graphical filter panel in which users can add, modify, and remove
+filters interactively during stepping, without editing their source
+code or triggering re-evaluation. This would lower the barrier to
+entry and allow exploratory use of filters.
+
+Beyond the interface, several extensions to the calculus are worth
+investigating. The current pattern language matches on expression
+structure; extending it with type-based patterns (e.g., ``skip all
+steps on expressions of type \texttt{Int}'') or context-based
+patterns (e.g., ``pause only inside recursive calls to \texttt{f}'')
+would give users finer-grained control. Finally, adapting the filter
+calculus to richer evaluation strategies---such as lazy evaluation or
+concurrent reduction---would broaden its applicability beyond Hazel.

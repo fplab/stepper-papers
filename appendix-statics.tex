@@ -1,0 +1,113 @@
+\section{Static Semantics}\label{sec:statics}
+
+We extend the filtered stepper calculus with types to ensure that
+patterns and expressions contain no free variables before matching is
+attempted.
+
+\begin{figure}[h]
+  \begin{equation*}
+    \begin{array}{rcl}
+      \ldots       &         & \ldots \\
+      \DefTyp \tau &\Coloneqq& \Natural \\
+                   &\mid     & \Arrow{\tau}{\tau}
+    \end{array}
+  \end{equation*}
+  \caption{Syntax of Typed Filtered Stepper Calculus. Only definitions of types are listed; refer to Figure~\ref{fig:filter-syntax} for omitted definitions.}
+  \label{fig:typed-filter-syntax}
+\end{figure}
+
+\fbox{\(\TypeEntails{\Gamma}{e}{\tau}\)} Under typing context \(\Gamma\), expression \(e\) has type \(\tau\).
+\begin{mathpar}
+  \inferrule[TE-Var]{
+    \TypeContains{\Gamma}{x}{\tau}
+  }{
+    \TypeEntails{\Gamma}{x}{\tau}
+  } \qquad
+  \inferrule[TE-Lam]{
+    \TypeEntails{\TypeExtends{\Gamma}{x}{\tau_x}}{e}{\tau_e}
+  }{
+    \TypeEntails{\Gamma}{\Lam{x}{e}}{\Arrow{\tau_x}{\tau_e}}
+  } \qquad
+  \inferrule[TE-Ap]{
+    \TypeEntails{\Gamma}{e_1}{\Arrow{\tau_x}{\tau_e}} \\
+    \TypeEntails{\Gamma}{e_2}{\tau_x}
+  }{
+    \TypeEntails{\Gamma}{e_1(e_2)}{\tau_e}
+  } \\
+  \inferrule[TE-Nat]{
+    \
+  }{
+    \TypeEntails{\Gamma}{\Nat{n}}{\Natural}
+  } \qquad
+  \inferrule[TE-Add]{
+    \TypeEntails{\Gamma}{e_1}{\Natural} \\
+    \TypeEntails{\Gamma}{e_2}{\Natural}
+  }{
+    \TypeEntails{\Gamma}{e_1 + e_2}{\Natural}
+  } \\
+  \inferrule[TE-Filter]{
+    \TypeEntails{\Gamma}{p}{\tau_p} \\
+    \TypeEntails{\Gamma}{e}{\tau_e}
+  }{
+    \TypeEntails{\Gamma}{\Filter{p}{e}}{\tau_e}
+  } \qquad
+  \inferrule[TE-Residue]{
+    \TypeEntails{\Gamma}{e}{\tau}
+  }{
+    \TypeEntails{\Gamma}{\Residue{a}{g}{l}{e}}{\tau}
+  } \\
+  \inferrule[TE-Fix]{
+    \TypeEntails{\TypeExtends{\Gamma}{x}{\tau}}{e}{\tau}
+  }{
+    \TypeEntails{\Gamma}{\Fix{x}{e}}{\tau}
+  }
+\end{mathpar}
+
+\fbox{\(\TypeEntails{\Gamma}{p}{\tau}\)} Under typing context \(\Gamma\), pattern \(p\) has type \(\tau\).
+\begin{mathpar}
+  \inferrule[TP-Exp]{
+  }{
+    \TypeEntails{\Gamma}{\PatExpr}{\tau}
+  } \qquad
+  \inferrule[TP-Val]{
+  }{
+    \TypeEntails{\Gamma}{\PatValue}{\tau}
+  } \\
+  \inferrule[TP-Var]{
+    \TypeContains{\Gamma}{x}{\tau}
+  }{
+    \TypeEntails{\Gamma}{x}{\tau}
+  } \qquad
+  \inferrule[TP-Lam]{
+    \TypeEntails{\TypeExtends{\Gamma}{x}{\tau_x}}{e}{\tau_e}
+  }{
+    \TypeEntails{\Gamma}{\Lam{x}{e}}{\Arrow{\tau_x}{\tau_e}}
+  } \qquad
+  \inferrule[TP-Ap]{
+    \TypeEntails{\Gamma}{p_1}{\Arrow{\tau_x}{\tau_p}} \\
+    \TypeEntails{\Gamma}{p_2}{\tau_x}
+  }{
+    \TypeEntails{\Gamma}{p_1(p_2)}{\tau_e}
+  } \\
+  \inferrule[TP-Nat]{
+    \
+  }{
+    \TypeEntails{\Gamma}{\Nat{n}}{\Natural}
+  } \qquad
+  \inferrule[TP-Add]{
+    \TypeEntails{\Gamma}{e_1}{\Natural} \\
+    \TypeEntails{\Gamma}{e_2}{\Natural}
+  }{
+    \TypeEntails{\Gamma}{e_1 + e_2}{\Natural}
+  } \qquad
+  \inferrule[TP-Fix]{
+    \TypeEntails{\TypeExtends{\Gamma}{x}{\tau}}{e}{\tau}
+  }{
+    \TypeEntails{\Gamma}{\Fix{x}{e}}{\tau}
+  }
+\end{mathpar}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main"
+%%% End:
