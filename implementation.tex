@@ -12,24 +12,29 @@ we built a standalone reference stepper in OCaml. It implements a
 substitution-based small-step evaluator for the simply typed lambda
 calculus extended with a fixpoint operator and the full filter calculus.
 The core is roughly 560 lines of OCaml, structured as a direct
-transliteration of the formal judgments: expressions, patterns, actions,
-and gas are mutually recursive algebraic data types, and filter and
+transliteration of the formal judgments: expressions and patterns are
+algebraic data types, actions and gas are simple sums, and filter and
 residue expressions are constructors of the expression type.
 
 A single stepping function orchestrates the pipeline described in
 Section~\ref{sec:dynamics}, calling instrumentation, optimization,
-decomposition, action selection, and decay in sequence. If action
-selection for the selected redex yields \(\ActSkip\), the stepper
-performs the instruction transition and recurses. If it yields
-\(\ActStep\), the stepper returns the list of available redexes to
-the caller.
+decomposition, action selection, transition, decay, and composition
+in sequence. If action selection yields \(\ActSkip\), or if the redex
+is a filter or residue elimination (the \(\Strippable{}\) case), the
+stepper performs the transition silently and recurses. Otherwise it
+returns the list of available redexes to the caller.
 
 Because the reference implementation uses substitution-based evaluation
 and named variables, it corresponds closely to the on-paper calculus and
 is easy to audit against the formal rules. We test the stepper against
-known results (e.g., verifying that \texttt{fac(5)} evaluates to 120)
-and use it as a test oracle for the Hazel integration: any divergence
-between the two indicates a bug in the production stepper.
+known results (e.g., verifying that \texttt{fac(5)} evaluates to 120).
+On the common subset of the two calculi (lambda calculus with addition,
+fixpoints, and filters), the reference implementation also serves as a
+differential test oracle for the Hazel integration; any divergence
+between the two indicates a bug in the production stepper. Hazel
+features beyond that subset---pattern matching, sum and product types,
+type ascriptions, typed holes---are covered by separate hand-written
+unit tests against expected trace outputs.
 
 \subsection{Hazel Integration}\label{sec:impl-hazel}
 
@@ -39,9 +44,12 @@ optimization. However, because the course teaches substitution-based
 equational semantics, the stepper must present traces as if
 substitution were performed eagerly.
 
-We achieve this by maintaining a single set of semantic transition
-rules that both the big-step evaluator and the small-step stepper
-interpret. The stepper works over Hazel's internal expression
+To keep the two evaluation styles consistent, the big-step evaluator
+and the small-step stepper share a common transition relation: each
+redex's reduction case is defined in one place, and the two
+interpreters differ only in their driver loop (recursive
+descent for the big-step evaluator versus single-redex extraction
+for the stepper). The stepper works over Hazel's internal expression
 representation, which includes closures (pairs of an expression and
 an environment). During decomposition, closures are traversed like
 ordinary expressions, with the environment carried in the evaluation
@@ -54,15 +62,14 @@ operates over Hazel's richer expression language, which includes
 pattern matching, sum and product types, type ascriptions, and typed
 holes. Filter matching uses a semantic equality check with special
 accommodations: fixpoint wrappers and type ascriptions are ignored
-during comparison, and empty holes in a pattern act as the
-\(\PatValue\) wildcard.
+during comparison.
 
 Beyond user-written filters, Hazel exposes UI toggles that classify
 certain step kinds (fixpoint unrolling, type-ascription elimination,
-case-clause selection) as skipped-by-default for the trace, while a few
-others (closure-wrapping, residue bookkeeping) are unconditionally
-hidden because they correspond to internal machinery rather than
-user-visible reductions.
+pattern-match redex selection) as skipped-by-default for the trace,
+while a few others (closure-wrapping, residue bookkeeping) are
+unconditionally hidden because they correspond to internal machinery
+rather than user-visible reductions.
 
 % We moved the content of performance section to be alongside with the
 % Optimization rule (O-*).
@@ -78,14 +85,16 @@ pattern. The $k$ factor is unavoidable, since a deeply nested filter must still
 be considered at every node it covers.
 
 The structural problem is what happens when several nested filters
-match the same redex: each match inserts its own residue, stacking
-them into a chain $k$ deep around a single node. Worse, those residues
-are not transient: they persist as part of the expression into the
-next step, where re-instrumentation walks over them and may add more
-on top. Without intervention, residue chains grow with the
-\emph{history} of stepping, not just with the size of the program, so
-the cost of decomposition and action selection drifts away from $O(n)$
-toward $O(n \cdot k)$ and keeps climbing.
+match the same redex. Two effects compound. First, within a single
+instrumentation pass, the recursive structure of \textsc{I-Filter}
+re-walks already-instrumented sub-expressions and can stack residues
+exponentially in the nesting depth (Section~\ref{sec:dynamics}).
+Second, those residues are not transient: they persist as part of
+the expression into the next step, where re-instrumentation walks
+over them and may add more on top. Without intervention, residue
+chains grow with the \emph{history} of stepping as well as with
+filter nesting depth, so the cost of decomposition and action
+selection drifts away from $O(n)$ and keeps climbing.
 
 The optimization pass cuts this back. \textsc{O-Residue-Inner} and
 \textsc{O-Residue-Outer} collapse each maximal chain of adjacent
