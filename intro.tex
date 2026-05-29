@@ -28,7 +28,7 @@ trace. Conditional breakpoints, as found in most debuggers, allow
 stopping at particular locations or when a variable satisfies a
 predicate, but they cannot express structural conditions such as
 ``pause whenever a recursive call to \texttt{map} is about to be
-applied to fully evaluated arguments.''
+applied to two values.''
 
 We address this gap with a \emph{scoped filter system} that gives
 users pattern-based control over which reduction steps are shown or
@@ -36,11 +36,10 @@ hidden. Users write lightweight filter annotations, embedded directly
 in the program text, that specify patterns over expressions. A filter
 can \emph{hide} all steps matching a pattern, \emph{show} (stop at) steps
 matching a pattern, or apply these effects to the entire evaluation of
-a matched sub-expression rather than a single step. Because filters
-are lexically scoped and dynamically applied, they compose naturally:
-an inner filter can override an outer one, and a filter attached to a
-function body travels with the closure, taking effect wherever the
-function is called.
+a matched sub-expression rather than a single step. Filters compose
+naturally. An inner filter can override an outer one through lexical
+nesting, and a filter attached to a function body travels with the
+closure, taking effect wherever the function is called.
 
 Returning to the factorial example, suppose the instructor wants to
 show only the recursive calls and hide the routine arithmetic. Adding
@@ -75,25 +74,27 @@ recursive calls and the final result.
 We make the following contributions:
 \begin{itemize}
   \item We present the \emph{Filtered Stepper Calculus}, a formal
-    semantics for scoped, pattern-based stepping control over
-    expression evaluation. We introduce its filter primitives by
-    example in Section~\ref{sec:examples}, then formalize the calculus
-    in Section~\ref{sec:filter}, where we prove preservation,
-    progress, and a simulation theorem (the filtered stepper agrees
-    with the underlying unfiltered semantics) and mechanize all proofs
-    in Agda.
+    semantics for scoped, pattern-based stepping control. We introduce
+    its filter primitives by example in Section~\ref{sec:examples} and
+    formalize them in Section~\ref{sec:filter}, with preservation,
+    progress, and simulation all mechanized in Agda.
   \item We implement the filtered stepper in Hazel
-    (Section~\ref{sec:implementation}). The implementation reconciles
-    Hazel's internal environment-based big-step evaluator with the
-    substitution-based presentation expected by students, and includes
-    several optimizations to keep interactive stepping responsive.
+    (Section~\ref{sec:implementation}), reconciling Hazel's internal
+    environment-based big-step evaluator with the substitution-based
+    presentation expected by students.
   \item We deploy the stepper in a university programming languages
-    course and report quantitative usage data and survey responses
-    from student assignments (Section~\ref{sec:evaluation}).
+    course (Section~\ref{sec:evaluation}) and report on the
+    instructor's experience in lecture, student usage data from
+    assignments, and end-of-term survey responses.
 \end{itemize}
 
 Section~\ref{sec:related} situates the work in related literature, and
 Section~\ref{sec:discussion} concludes.
+
+\paragraph{Supplemental material.}
+Accompanying this submission are the Agda mechanization, the OCaml
+source and pre-built binary of the reference implementation, and a
+pre-built copy of the Hazel stepper.
 
 %%% Local Variables:
 %%% mode: LaTeX
