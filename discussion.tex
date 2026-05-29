@@ -24,25 +24,79 @@ working on assignments are focused on correctness rather than trace
 exploration, so the cost of learning the filter language may not be
 justified in that context.
 
-% NOTE: Taken out for no lecture integration.
-% Notably, the filter system proved more
-% useful in lectures, where the instructor prepared filters in advance
-% to highlight specific aspects of evaluation for the class.
+\paragraph{Lecture versus assignment contexts.}
+A natural reading is that filters answer different needs in lecture
+versus assignment contexts. In lecture, the instructor prepares
+filters ahead of time to direct attention, and the cost of writing
+them is amortized over a classroom of viewers. On assignments, a
+student writes filters for an audience of one and pays the full cost
+themselves, with no immediate payoff in terms of grade or
+correctness. The lecture-side adoption suggests filters are most
+useful, at least initially, as a presentation tool. Broader student
+adoption may depend on lowering the per-use cost (cf. the graphical
+panel discussed below).
+
+\paragraph{Limitations.}
+The primary contribution of this paper is a theoretical treatment of
+pattern-based control over algebraic stepping: a formal calculus,
+mechanized metatheory, and a working implementation. The classroom
+deployment we report is illustrative rather than a controlled study.
+It involves one instructor at one institution, the assignment sample
+is small ($n = 33 + 20$), survey responses are voluntary and
+self-reported, and we did not measure learning outcomes. Stronger
+claims about pedagogical effectiveness would require a controlled
+study against an unfiltered stepper and a no-stepper baseline,
+ideally across multiple instructors. Our evaluation is intended
+only to demonstrate that students and an instructor will pick up the
+tool and use it under normal classroom conditions.
 
 \paragraph{Future work.}
 
-The filter adoption findings point to a clear design direction:
-separating the filter interface from the program text. We envision
-a graphical filter panel in which users can add, modify, and remove
-filters interactively during stepping, without editing their source
+The filter-adoption findings point to a clear design direction:
+separating the filter interface from the program text. We envision a
+graphical filter panel in which users can add, modify, and remove
+filters interactively \emph{during stepping}, without editing source
 code or triggering re-evaluation. This would lower the barrier to
-entry and allow exploratory use of filters.
+entry and, perhaps more importantly, make filters useful for
+\emph{interactive debugging}: a user could discover what to focus on
+while exploring a trace, rather than predicting it ahead of time.
+Filter annotations would then function less like up-front program
+declarations and more like queries on an ongoing computation.
 
-Beyond the interface, several extensions to the calculus are worth
-investigating. The current pattern language matches on expression
-structure. Extending it with type-based patterns (e.g., ``skip all
-steps on expressions of type \texttt{Int}'') or context-based
-patterns (e.g., ``pause only inside recursive calls to \texttt{f}'')
-would give users finer-grained control. Finally, adapting the filter
-calculus to richer evaluation strategies, such as lazy evaluation or
-concurrent reduction, would broaden its applicability beyond Hazel.
+A second direction is a more expressive filter language. The current
+pattern language matches on the syntactic structure of the redex up
+to a fixed nesting depth. Two kinds of queries we found ourselves
+wanting are not expressible. The first refers to the type or shape
+of sub-expressions: ``skip all \texttt{let} reductions whose
+right-hand side is a function value'' is a natural request, but our
+patterns can only match values uniformly, not values of a particular
+type. The second requires recursive structure: ``stop at any
+expression composed entirely of literal values and arithmetic
+operators, before it begins reducing'' would require something like
+a grammar-style production or a recursive predicate over the AST.
+Type-based patterns and predicate-based patterns would each
+address part of this gap.
+
+A third direction is filter inference. When a user is overwhelmed by
+a long trace, the system could observe which steps they advance
+through quickly versus dwell on and propose filter annotations
+automatically. This would lower the activation cost for occasional
+users for whom writing a filter from scratch is too much overhead.
+
+Relatedly, instructors could ship pedagogical filter sets with
+assignments---a shared library of common filter patterns that
+students apply directly. Filters become reusable classroom artifacts
+in their own right, and standard filters could be developed and
+refined across cohorts and courses.
+
+Finally, adapting the filter calculus to richer evaluation
+strategies, such as lazy evaluation or concurrent reduction, would
+broaden its applicability beyond Hazel.
+
+\paragraph{Conclusion.}
+The Filtered Stepper Calculus offers a principled, mechanized answer
+to the ``too many steps'' problem in algebraic stepping: let the user
+describe, lexically and by structure, which reductions to surface,
+and let the calculus handle the rest. The remaining design space
+lies largely in user interface---how best to expose the calculus's
+expressive power to instructors and students in practice.
