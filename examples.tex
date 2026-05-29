@@ -20,7 +20,7 @@ available redexes for the next step.
   \begin{subfigure}{0.40\linewidth}
     \frame{\includegraphics[scale=0.34]{images/eg11.png}}
     \Description{Hazel code defining a list map function, a square function, and a call to map over [1, 2, 3].}
-    \caption{Hazel Code. This code, when run, will evaluate to the list [1,4,9].}
+    \caption{The map example. Evaluates to \code{[1, 4, 9]}.}
     \label{fig:hazel-map}
   \end{subfigure}
   \hfill
@@ -36,23 +36,22 @@ available redexes for the next step.
 The factorial traces in \autoref{fig:intro-fac} illustrate why showing
 every step can be distracting: routine substitutions and arithmetic
 quickly obscure the reductions that matter. The partial trace in
-\autoref{fig:full-trace} shows the same issue beginning to arise for
-\code{map}.
+\autoref{fig:full-trace} shows the same issue arising for \code{map}.
 To address this, the Hazel stepper provides \emph{filter} annotations
 that the user embeds in the program text to control which steps appear
 in the trace.
 
 Each filter takes a \emph{pattern} that selects expressions by
-structure. Patterns use the same syntax as Hazel expressions, so any
-expression the user can write is also a valid pattern. Two additional
-forms are provided: \code{\$e}, which matches any expression, and
+structure. Patterns use the same syntax as Hazel expressions, so
+every Hazel expression is also a valid pattern. Two additional forms
+are provided: \code{\$e}, which matches any expression, and
 \code{\$v}, which matches any value. For example,
 \code{map(\$v, \$v)} matches any application of \code{map} to two
-fully-evaluated arguments. We give the formal pattern-matching rules
-in Section~\ref{sec:filter}. We provide four filter constructs:
+values. We give the formal pattern-matching rules in
+Section~\ref{sec:filter}. We provide four filter constructs:
 \begin{itemize}
   \item \code{debug hide(\textit{pat})}: hide \emph{one} matching step.
-  \item \code{debug stop(\textit{pat})}: show \emph{one} matching step (overrides hide).
+  \item \code{debug stop(\textit{pat})}: show \emph{one} matching step.
   \item \code{debug eval(\textit{pat})}: hide \emph{all} evaluation steps for a matching sub-expression.
   \item \code{debug step(\textit{pat})}: show \emph{all} evaluation steps for a matching sub-expression.
 \end{itemize}
@@ -62,20 +61,20 @@ matching sub-expression.
 
 To illustrate, suppose we only want to see the recursive calls to
 \code{map}. In \autoref{fig:hide-stop-map} we add two filters:
-\code{debug hide(\$e)} hides all steps (since \code{\$e} matches any
-expression), and \code{debug stop(map(\$v, \$v))} overrides the
-preceding hide to show any step taken from an expression containing
-\code{map} applied to two values. Since \code{debug stop} appears
-later in the program, it takes priority. The resulting trace
-(\autoref{fig:recursive-trace}) shows only the recursive \code{map}
-calls.
+\code{debug hide(\$e)} hides every step, since \code{\$e} re-matches
+at every instrumentation pass, and \code{debug stop(map(\$v, \$v))}
+overrides the preceding hide to show any step taken from an
+expression containing \code{map} applied to two values. Since
+\code{debug stop} is the inner of the two filters, it takes
+priority. The resulting trace (\autoref{fig:recursive-trace}) shows
+only the recursive \code{map} calls.
 
 \begin{figure}
   \centering
   \begin{subfigure}[T]{0.40\linewidth}
     \frame{\includegraphics[scale=0.4]{images/eg21.png}}
     \Description{Map example annotated with debug eval and debug stop filters to focus on recursive calls.}
-    \caption{The code from \autoref{fig:hazel-map} modified with extra \code{debug hide} and \code{debug stop} statements.}
+    \caption{The code from \autoref{fig:hazel-map} with added \code{debug hide} and \code{debug stop} filters.}
     \label{fig:hide-stop-map}
   \end{subfigure}
   \hfill
@@ -89,20 +88,20 @@ calls.
 \end{figure}
 
 Alternatively, we might want to see not just which recursive calls
-\code{map} makes, but also how each application of \code{f} evaluates.
-In \autoref{fig:debug-map} we add a \code{debug step} filter to
-achieve this. The result (\autoref{fig:debug-trace}) now includes not
-only the recursive \code{map} calls, but also the intermediate
-multiplications inside each \code{square} call. For instance, the
-third and sixth lines show \code{<square>(1)} and \code{<square>(2)}
-being expanded into its constituent steps.
+\code{map} makes, but also how each application of \code{square}
+evaluates. In \autoref{fig:debug-map} we add a \code{debug step}
+filter to achieve this. The result (\autoref{fig:debug-trace}) now
+includes not only the recursive \code{map} calls, but also the
+intermediate multiplications inside each \code{square} call. For
+instance, the third and sixth lines show \code{<square>(1)} and
+\code{<square>(2)} being expanded into their constituent steps.
 
 \begin{figure}
   \centering
   \begin{subfigure}{0.40\linewidth}
     \frame{\includegraphics[scale=0.35]{images/eg31.png}}
     \Description{Map example with eval and step filters, including debug mode for square.}
-    \caption{The code from \autoref{fig:hazel-map} modified with extra \code{debug hide}, \code{debug stop}, and \code{debug step} statements.}
+    \caption{The code from \autoref{fig:hazel-map} with added \code{debug hide}, \code{debug stop}, and \code{debug step} filters.}
     \label{fig:debug-map}
   \end{subfigure}
   \hfill
@@ -117,7 +116,7 @@ being expanded into its constituent steps.
 
 Note that \code{debug step} here overrides the earlier \code{debug hide}
 and \code{debug stop}. Intuitively, the innermost filter surrounding
-the next reduction step takes priority, a form of dynamic scoping.
+the next reduction step takes priority, a form of lexical scoping.
 In the next section, we formalize these filter primitives and their
 interactions as the \emph{Filtered Stepper Calculus}.
 
