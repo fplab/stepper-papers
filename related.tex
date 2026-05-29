@@ -3,51 +3,91 @@
 Algebraic steppers for functional languages have long served pedagogy. The
 DrScheme/Racket algebraic stepper presents small-step reductions that mirror
 operational semantics, with formal correctness arguments for its
-traces~\cite{clements2001stepper}. Cong and Asai showed how delimited
-continuations can implement such steppers for ML-like
-languages~\cite{cong2016stepper}, a line continued in steppers for practical
-OCaml fragments that handle effectful constructs such as exceptions and
-printing primitives~\cite{furukawa2019stepping}, and most recently extended to
-simple modules with hierarchical variable references~\cite{asai2025modules}.
-Our work keeps this source-level, semantics-directed view of evaluation, but
-adds scoped, pattern-based control over which reductions appear in the trace.
+traces~\cite{clements2001stepper}. A parallel rewriting-based tradition runs
+through the HIPE/WinHIPE line, in which user programs are evaluated by an
+exposed rewriting system and the resulting traces are animated for classroom
+use~\cite{urquiza2007winhipe}. Cong and Asai showed how delimited continuations
+can implement steppers for ML-like languages~\cite{cong2016stepper}, a line
+continued in steppers for practical OCaml fragments that handle effectful
+constructs such as exceptions and printing
+primitives~\cite{furukawa2019stepping}, and most recently extended to simple
+modules with hierarchical variable references~\cite{asai2025modules}. Closest
+to our motivation, Olmer, Heeren, and Jeuring's Haskell tutoring environment
+addresses trace verbosity by letting students switch between innermost and
+outermost evaluation orders to control which reductions are
+shown~\cite{olmer2014evaluating}; the surrounding Ask-Elle tutor integrates
+this with automated feedback on student-written Haskell
+programs~\cite{gerdes2017askelle}. Our work keeps the source-level,
+semantics-directed view of evaluation common to all of these systems, but
+gives users a finer-grained control: rather than picking a strategy globally,
+users embed lexically scoped patterns that select which reductions appear in
+the trace on a redex-by-redex basis.
 
 \paragraph{Programmer-directed focus.}
 Bertot's occurrence-based debugger specifications and Bernstein and Stark's
 focusing debugger formalize how users can direct debugging attention to
-particular source-level occurrences~\cite{bertot1991occurrences,bernstein1995focusing}. Algorithmic debugging, going back to
-Shapiro~\cite{shapiro1983algorithmic} and continuing through modern Haskell
-instantiations such as Hoed~\cite{faddegon2015hoed}, achieves user-directed
-focus through oracle questioning: the programmer's yes/no answers about
+particular source-level
+occurrences~\cite{bertot1991occurrences,bernstein1995focusing}. Algorithmic
+debugging, going back to Shapiro~\cite{shapiro1983algorithmic} and continuing
+through modern Haskell instantiations such as Buddha and
+Hoed~\cite{pope2004buddha,faddegon2016hoed}, achieves user-directed focus
+through oracle questioning: the programmer's yes/no answers about
 subcomputation correctness successively narrow the debugger's attention to
-the buggy subtree. Interrogative debugging via the Whyline takes a
-complementary approach, generating a menu of ``why did'' and ``why didn't''
-questions that the user selects to highlight relevant runtime
+the buggy subtree. Closely related, Perera et al.\ recast a functional
+evaluation trace as an \emph{explanation} of an observed output, using
+program slicing to extract the minimal subprogram that produced
+it~\cite{perera2012explain}. Interrogative debugging via the
+Whyline takes a complementary approach, generating a menu of ``why did'' and
+``why didn't'' questions that the user selects to highlight relevant runtime
 events~\cite{ko2004whyline}. Expositor exposes execution traces as first-class
 values that programmers can script with \texttt{map} and \texttt{filter} to
-direct focus~\cite{khoo2013expositor}. Hazel filters extend this lineage with
+direct focus~\cite{khoo2013expositor}. On the imperative side, Boothe's
+bidirectional debugger gave programmers an event-counter-based language for
+navigating execution forwards and backwards along chosen event
+classes~\cite{boothe2000bidirectional}. Hazel filters extend this lineage with
 redex-structural patterns that compose through lexical scope and integrate
 with an algebraic stepper.
 
+\paragraph{Lexically scoped source annotations.}
+The methodological pattern of attaching lightweight, lexically scoped
+annotations to source code to control a dynamic observation has a direct
+ancestor in profiling. Sansom and Peyton Jones introduced \emph{cost centres}
+for higher-order functional languages: programmer-written annotations,
+attached to source regions, that attribute runtime costs to named scopes,
+with a formal cost-attribution semantics that is invariant under
+evaluation~\cite{sansom1997profiling}. Filter annotations share this
+methodological shape. A lexically scoped construct in the source does not
+affect the result of evaluation, but governs how a dynamic event (cost
+attribution there, step visibility here) is attributed to source regions.
+
 \paragraph{Tracing tools for functional languages.}
 Tracing tools record the reduction history of a computation for later
-inspection. An early source-level debugger from Standard ML by Tolmach and Appel used source-to-source instrumentation and first-class continuations to provide breakpoints and reverse execution (time-traveling) without depending on the machine representation~\cite{tolmach1995debugger}.
-Hood lets programmers insert \texttt{observe} annotations to
-capture intermediate values without altering program
-semantics~\cite{gill2000hood}. Hat records an \emph{augmented redex trail} and
-provides multiple views over it, including search and structured
-querying~\cite{wallace2001hat}. The GHCi debugger brought interactive
-source-level breakpoints to lazy Haskell via lightweight bytecode
-instrumentation~\cite{marlow2007ghci}. More recently, CSI:~Haskell extends
-GHC's coverage tooling to record evaluation traces alongside the call stack,
-reconstructing the chain of events leading to a fault in lazy
-code~\cite{gissurarson2023csi}. Our stepper similarly maintains a step
-history, but the trace is \emph{filtered} by user-specified patterns rather
-than recorded uniformly.
+inspection. An early source-level debugger from Standard ML by Tolmach and
+Appel used source-to-source instrumentation and first-class continuations to
+provide breakpoints and reverse execution without depending on the machine
+representation~\cite{tolmach1995debugger}. Nilsson and Fritzson's Freja
+debugger introduced declarative debugging for lazy functional languages, using
+an evaluation-dependence tree as the basis for oracle
+questioning~\cite{nilsson1994algorithmic}. Hood lets programmers insert
+\texttt{observe} annotations to capture intermediate values without altering
+program semantics~\cite{gill2000hood}, and GHood adds graphical animation of
+those observations~\cite{reinke2001ghood}. Hat records an \emph{augmented
+redex trail} and provides multiple views over it, including search and
+structured querying~\cite{wallace2001hat}. Chitil's source-based trace
+explorer builds on Hat to unify algorithmic debugging, stepping, and dynamic
+slicing into a single source-driven viewer in which the user navigates the
+trace by selecting source-level subterms~\cite{chitil2005source}. The GHCi
+debugger brought interactive source-level breakpoints to lazy Haskell via
+lightweight bytecode instrumentation~\cite{marlow2007ghci}. More recently,
+CSI:~Haskell extends GHC's coverage tooling to record evaluation traces
+alongside the call stack, reconstructing the chain of events leading to a
+fault in lazy code~\cite{gissurarson2023csi}. Our stepper similarly maintains
+a step history, but the trace is \emph{filtered} by user-specified patterns
+rather than recorded uniformly.
 
 \paragraph{Pattern languages and term-rewriting strategies.}
 Our filter language is also related to program-pattern and
-strategy-controlled term-processing systems. SCRUPLE and ASTLOG use structural
+strategy-controlled rewriting systems. SCRUPLE and ASTLOG use structural
 patterns to query program trees~\cite{paul1994scruple,crew1997astlog}.
 Stratego separates rewrite rules from strategies that control where and how
 rules are applied~\cite{visser2001stratego}. Coccinelle's \emph{semantic
@@ -57,14 +97,26 @@ kernel~\cite{padioleau2008coccinelle}. Hazel filters use a smaller pattern
 language and do not let users change the evaluator. Instead, patterns control
 the visibility of steps produced by a fixed algebraic stepper.
 
+\paragraph{Programming education context.}
+More broadly, our stepper sits within a long-running line of work on program
+visualization and \emph{notional machines} for introductory programming
+education. Sorva, Karavirta, and Malmi survey generic visualization systems
+and distill the design lessons of that body of work, including the central
+tension between fidelity to the underlying semantics and clarity for a
+novice~\cite{sorva2013review}. Clements and Krishnamurthi's recent
+investigation of pedagogical models for runtime stacks and scope --- using a
+block-based programming environment for empirical study --- illustrates that
+the question of how best to render evaluation comprehensible to students
+remains an active research concern~\cite{clements2022notional}.
+
 \paragraph{Hazel substrate.}
 Hazelnut-style structural editing and semantics for incomplete programs make
 the AST explicit at all times, which naturally supports tree-pattern matching
-and stepping in the presence of holes~\cite{omar2017hazelnut,omar2019live}. The substrate has since
-been extended with typed pattern holes that enable live evaluation in the
-presence of incomplete match expressions~\cite{yuan2023peanut}, and with the
-marked lambda calculus that gives a total account of type error
-localization and recovery, providing the foundation on which modern Hazel is
-built~\cite{zhao2024marking}. The filter calculus builds on this substrate to
-give a precise semantics for scoped, pattern-based stepping control in a live
-functional environment.
+and stepping in the presence of holes~\cite{omar2017hazelnut,omar2019live}.
+The substrate has since been extended with typed pattern holes that enable
+live evaluation in the presence of incomplete match
+expressions~\cite{yuan2023peanut}, and with the marked lambda calculus that
+gives a total account of type error localization and recovery, providing the
+foundation on which modern Hazel is built~\cite{zhao2024marking}. The filter
+calculus builds on this substrate to give a precise semantics for scoped,
+pattern-based stepping control in a live functional environment.
