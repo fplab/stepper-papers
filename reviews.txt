@@ -1,0 +1,144 @@
+ESOP 2027 Paper #57 Reviews and Comments
+===========================================================================
+Paper #57 Practical Algebraic Stepping with Scoped Filters
+
+
+Review #57A
+===========================================================================
+
+Overall merit
+-------------
+B. OK paper, but I will not champion it
+
+Confidence
+----------
+Y. I am knowledgeable in this area, but not an expert
+
+Paper summary
+-------------
+The authors report on a pedagogical tool for showing intermediate reduction steps in Hazel
+programs. They give a formal semantics to a minimal stepper calculus, featuring scoped
+filters for controlling which steps are displayed. This semantics as well as metatheoretical
+results are mechanized in Adga. They further report on their experience deploying this
+prototype Hazel extension in university programming language classes.
+
+Comments for authors
+--------------------
+The contribution is well delimited and clearly explained. Further, although the contribution
+is rather applied, I think it is interesting to see the metatheory worked out formally. All
+in all I find the paper pleasant and the contribution significant. The only weak spot (which
+will be obvious from my questions), is that the design of the calculus seems highly
+influenced by the substitution-based presentation (and so indirectly by simplicity of
+explanation and formalization), possibly at the detriment of ease of (efficient) implementation.
+There is little comment on what other approaches could have been, where are the tradeoffs,
+etc.
+
+Misc.:
+
+* p.7, beginning of sec 3.2: italics problem, duplicated "and"
+* sec 3.3, the list of paragraphs is a bit long and I got a bit lost to where we were going
+
+Questions for authors’ response
+-------------------------------
+* Decomposing the dynamic semantics in a long sequence of very atomic steps
+  (instrumentation, optimization, decomposition, etc) makes the method easy to understand
+  precisely. However, it feels highly inefficient for implementation. Sections 4.2 and 4.3
+  tackle this, but only lightly. I would have expected mention of fusing several passes (at least
+  instrumentation and optimization), perhaps also simultaneous matching (instrumenting a
+  term with all filters at the same time). I'm sure you thought about this more than me, so
+  perhaps my suggestions are naive, but the text is not entirely convincing in this regard.
+* Another thing surprised me with the approach, but I'm not sure how actionable it is
+  for this review. You state that the filters are *lexically* scoped. They are indeed, but usually
+  the lexical scope is the one of the *source* program, not of some partially reduced term.
+  As such, the way the filters act feels more like dynamic bindings (as some lisps). And
+  indeed, it seems to me that the lexical scope of some partially reduced term is a mix of
+  the lexical structure of the source, as well as the call stack at that point in time
+  (dynamic bindings are resolved by walking up the call stack). Did you consider
+  implementing (and formalizing) debug annotations a bit like exception handlers or dynamic
+  bindings? Perhaps by keeping track of a stack of currently active filters during
+  reduction.
+* Related to the above (perhaps it is the same question): do you have any hope of
+  implementing the stepping semantics in a big-step evaluator, by instrumenting e.g. a
+  recursive evaluator, or an abstract machine? Perhaps it would not be very useful for
+  Hazel, but as a debugging tool for other functional languages.
+* p.8, the explanation of the non-determinism of the decomposition relation is not entirely
+  clear. You state that is meaningful only when the resulting action is `step`, but this can
+  only be known later. Do you actually try every possible redex and run action selection?
+  Perhaps the answer is in the stepping judgment but I cannot convince myself.
+
+
+
+Review #57B
+===========================================================================
+
+Overall merit
+-------------
+B. OK paper, but I will not champion it
+
+Confidence
+----------
+X. I am an expert in this area
+
+Paper summary
+-------------
+The paper defines a filtered stepper calculus, which permits control over stepping behaviors based on user defined filters in the lexical scope. Each reduction operates in a pipeline which involves instrumentation, optimization, etc. to determine what reduction result to display to the users. The calculus is mechanized in Agda and several standard theorems are proved as well. The paper also discusses implementations and its integration with the Hazel platform. This work is also used at a university. The experience is shared in the paper as well.
+
+Comments for authors
+--------------------
+The paper is very well written and structured. I like how the paper is led with visual examples, showing how it is used in practice, before getting into the theory. The calculus is well explained, and the example helps a lot. I much appreciate the authors' effort into making the paper this enjoyable to read. 
+
+The following are my questions for the authors:
+
+1. Regarding the syntax for the filters.  I do not find that they are intuitive. For example, when I see `debug eval(p)`, I am thinking that `p` should be displayed, while the paper says it's the opposite. What's even more puzzling is `debug stop(p)` does what I think `eval` should do! After finishing reading the paper, I think I have some vague understanding, but it still does not justify the key words. In particular, `debug stop(p)` and `debug step(p)` actually make sense! IMO, this causes a barrier for students to actually use these filters more proactively. What are the authors' thoughts on them? Why were the key words chosen like this? 
+
+2. One recurring discussion in the paper is the cost of instrumentation and how optimization lowers it. It is unclear to me why this detour is needed. Since filters are organized as scopes, it is obvious that they can be organized in a filter stack.  In this case, the instrumentation judgment, in particular, the I-Filter rule only needs to traverse the filter stack to pick the first/topmost action that applies. What the paper proposes is to flatten this filter stack syntactically **everywhere** for **every** sub-term in the program, and unsurprisingly it blows up the term size. 
+
+3. Again on the pipeline, since the pipeline eventually decays terms and eventually removes all filters and residues, for **every** reduction step as shown in P15, why do we have to go through the whole pipeline at all? Would it be sufficient to do the following:
+    * For every reduction step, we scan every sub-term and match it against patterns in the filter stack, as long as one sub-term results in a step action, we stop the reduction and return the overall term to the users. 
+
+    This algorithm is simpler to implement and formalize, and is computationally comparable. What are authors' thoughts?
+
+4. As stated in the future work, why do we have filters as part of the program? Why was this choice motivated? For debugging and educational purposes, it seems natural to have this machinery outside of the system, doesn't it? This choice is not justified in the paper (at least I don't notice it). 
+
+5. It appears to me that filters can also be placed in function definitions and should still behave properly. Have the authors thought about when it would be useful? 
+
+Nits:
+
+1. P6: It would be nice to say that $^a_g<e>^l$ is a residue at its first appearance.
+2. P13: In the first paragraph, after Appendix A, "This is how the T-Filter and T-Residue transitions above". T-Filter and T-Residue are only mentioned **below**.
+3. P21: what are the axis in Fig 8?
+
+Questions for authors’ response
+-------------------------------
+Please at least address Q1-3 above
+
+
+
+Review #57C
+===========================================================================
+
+Overall merit
+-------------
+A. Good paper, I will champion it
+
+Confidence
+----------
+Y. I am knowledgeable in this area, but not an expert
+
+Paper summary
+-------------
+This paper presents a calculus for interactively stepping through evaluation of expressions in a functional language.
+
+Comments for authors
+--------------------
+Overall, the paper is very well written. The prose is clear, the concept is both well motivated and clearly explained, the metatheory is pretty clean, the claims are clear and well justified. The paper even manages to bring in some empirical justification, although the authors are upfront about the limitations of this evaluation. I think it's an excellent fit for ESOP.
+
+One thing that could possibly be improved is the explanation of the connection between the stepper and the theoretical model. Perhaps I missed a line explaining this, but it took me a bit to figure out that the model was "multi-step reduction gets stuck on the term that is to be shown to the user" (I think). So a complete evaluation of the program is repeated applications of multi-step reduction, and each separate application is something shown in the stepper. Expanding on this before the presentation of the rules might help lead the reader to the connection between the theory and implementation. I spent a while looking for some kind of "output parameter" of the relations before realizing that was not how things were structured.
+
+Another suggestion is to elaborate sooner on what is meant by "lexical" filters: that they work kind of like scopes, that can expand and contract dynamically depending what steps the program takes, that they're effectively language features. 
+
+For the evaluation section, it might be worthwhile to mention (broad) details of the cohort who evaluated it? Were they introductory students or senior students? Is the course required or an elective?
+
+For the rules, it might be useful to have a grey box or some kind of highlighting around the non-structural rules, since so many of the rules are just "do the recursion in the expected way."
+
+It would be useful to have an example of when the difference between a strippable and non-strippable term shows up and changes what happens.

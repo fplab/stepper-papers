@@ -1,0 +1,63 @@
+We thank all reviewers for their careful readings.
+
+## Reviewer A
+
+A-Q1: Yes, we do fuse passes and in the Hazel implementation. In the final version, we will clarify what the actual implementation looks like, which passes are fused, and how they map back to the original phased semantics.
+
+A-Q2: We will describe the overall system as lexically scoped when defining the filter but dynamically scoped in a certain sense at run-time. This is because we want filters surrounding expressions defined later to be able to pause in the middle of functions defined earlier.
+
+It is possible to implement filters by maintaining a stack of active filters (though still using residues), and we are actually using such implementation in Hazel, but the formalism is more simply presented in a more syntax-directed manner with regard to which filters are active.
+
+A-Q3: Something like this could be possible. By maintaining a filter stack we can insert checkpoints in a big-step evaluator, and test the current term against the filter stack to decide how to proceed. This could also be used to transition from big step to small step evaluation at points of interest. We will mention this as a direction for future work.
+
+A-Q4: Yes, that interpretation of non-determinism in the system is correct - if any resulting action is “skip”, we perform that reduction. If all resulting actions are step then the choice is presented to the user. Happy to clarify this in the final version.
+
+## Reviewer B
+
+B-Q1: These keywords are commands to the evaluator, so eval(p) means “fully evaluate expressions that match p”, stop(p) means “stop before evaluating expressions that match p”, etc. These four keywords can be put into a table for easier understanding:
+
+| | Display step to user | Continue Evaluating |
+|-|-|-|
+| For one step | `stop` | `hide` |
+| Until it steps to a value | `step` | `eval` |
+
+
+We can add this clarification to our introduction.
+
+B-Q2, 3: If we have understood your suggestion correctly, a filter stack requires two assumptions we can’t rely on. First, it assumes that the action stack doesn’t change during evaluation, consider debug eval 2 + 3 + 4 in debug pause 1 + 2 + 7 in 1 + 2 + 3 + 4, after automatically evaluating 3 + 4, we need to “zoom out” to see that the expression now matches 1 + 2 + 7 and must pause. Secondly it assumes a single point of evaluation in the expression, whereas we let the user choose which sub-expression to evaluate next.
+
+We do fuse some passes in the Hazel implementation and plan to revise the paper to clarify this (see A-Q1 and A-Q2).
+
+B-Q4: Hazel also has some of the external debugging toggles, like skipping over some steps, but they lack support for scoping and patterns that locating filters in code provides.
+
+B-Q5: This is one of our intended uses - users/students can use it to skip over some helper functions called inside a function that they don’t care about.
+
+## Reviewer C
+
+Thank you for the suggestions for how we can improve our explanations.
+
+> … details of the cohort who evaluated it?
+
+Our cohort is senior students in an elective course
+
+> It would be useful to have an example of when the difference between a strippable and non-strippable term shows up and changes what happens.
+
+Here is an example we can include:
+
+- S-Skip-Strippable effective:
+
+```
+  debug step($e) in (1+2)+3
+= debug step($e) in 3 + 3
+= 6
+```
+
+- S-Skip-Strippable removed:
+
+```
+  debug step($e) in (1+2)+3
+= debug step($e) in (3) + 3 <- residue around the first 3
+= debug step($e) in 3 + 3 <- residue stepped
+= debug step($e) in (6) <- residue around the 6
+= ..
+```
