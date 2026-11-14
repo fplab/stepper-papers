@@ -90,7 +90,7 @@
 \newcommand{\FilterDebug}[2]{\KeywordFilter{} \KeywordDebug{}(#1)~\mathsf{in}~#2}
 \newcommand{\FilterPause}[2]{\KeywordFilter{} \KeywordPause{}(#1)~\mathsf{in}~#2}
 
-\newcommand{\Residue}[4]{\prescript{#1}{#2}{\langle} #4 \rangle^{#3}}
+\newcommand{\Residue}[3]{\prescript{#1}{}{\langle} #3 \rangle^{#2}}
 \newcommand{\ResidueEval}[2]{\KeywordEval \# #1 ~\mathsf{in}~ #2}
 \newcommand{\ResidueHide}[2]{\KeywordHide \# #1 ~\mathsf{in}~ #2}
 \newcommand{\ResiduePause}[2]{\KeywordPause \# #1 ~\mathsf{in}~ #2}
@@ -141,6 +141,18 @@
 \newcommand{\TypeEntails}[3]{#1 \vdash #2 : #3}
 \newcommand{\TypeContains}[3]{#1 \ni #2 : #3}
 \newcommand{\TypeExtends}[3]{#1 , #2 : #3}
+
+% Stack-based dynamics. Contexts use ordinary hole-plugging notation.
+\newcommand{\StackDecompose}[5]{#1 \vdash #2 \Rightarrow #3 \{ #4 \} \dashv #5}
+\newcommand{\FilteredStep}[2]{#1 \twoheadrightarrow #2}
+\newcommand{\MatchUnder}[3]{#1 \vdash \Matches{#2}{#3}}
+\newcommand{\Plug}[2]{#1[#2]}
+\newcommand{\TopState}{\mathsf{top}}
+\DeclareMathOperator{\Lookup}{lookup}
+\DeclareMathOperator{\Bump}{bump}
+\DeclareMathOperator{\Keep}{keep}
+\DeclareMathOperator{\Patternize}{to\_pat}
+\newcommand{\StripResidues}[1]{\operatorname{strip}_{\delta}(#1)}
 
 %%% Local Variables:
 %%% mode: latex

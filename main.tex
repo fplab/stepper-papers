@@ -167,11 +167,12 @@
   displaying evaluation as a sequence of small-step reductions, but
   even simple programs produce long traces in which key ideas are
   buried under mundane reductions. This paper presents the
-  \emph{filtered stepper calculus}, a formal framework that gives
+  \emph{Filtered Stepper Calculus}, a formal framework that gives
   users scoped, pattern-based control over which reduction steps are
-  shown or hidden. Users annotate programs with lightweight filter
-  expressions that match on the structure of redexes. Filters compose
-  via lexical scoping so that inner filters override outer ones. We
+  shown or hidden. Users annotate programs with concise filter
+  expressions that match on the structure of sub-expressions. A filter
+  governs every step taken while the expression it annotates is evaluated,
+  and inner filters override outer ones. We
   prove preservation, progress, and a simulation theorem establishing
   that the filtered stepper agrees with the underlying unfiltered
   semantics, and mechanize all proofs in Agda. We implement the
@@ -217,6 +218,7 @@
 \bibliography{references}
 
 \appendix
+\renewcommand{\theHsection}{\Alph{section}}
 \input{appendix-rules}
 
 \end{document}

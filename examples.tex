@@ -1,4 +1,4 @@
-Section~\ref{sec:intro} showed how a single filter can collapse a
+Section~\ref{sec:intro} showed how filters can collapse a
 factorial trace to its key steps. We now use a richer example,
 mapping a function over a list, to introduce the full set of filter
 primitives and show how they compose.
@@ -11,9 +11,13 @@ highlights every reducible expression (redex) in the program. The user
 clicks on a highlighted redex to reduce it, and the expression is
 rewritten in place. A history panel lets the user expand the full
 sequence of steps taken so far. \autoref{fig:full-trace} shows the
-partial trace for this program: each line corresponds to one
-reduction step, and the green highlight at the bottom marks the
-available redexes for the next step.
+first steps of the trace for this program. Each row is one reduction
+step, labelled on the right with what it did: the first two rows
+substitute the definitions of \code{map} and \code{square}.
+Function values are abbreviated by name, as in \code{<map>}. The
+bottom row is the current expression,
+\code{<map>([1, 2, 3], <square>)}, and its green highlight marks
+the redex available next: the application of \code{map}.
 
 \begin{figure}
   \centering
@@ -26,45 +30,68 @@ available redexes for the next step.
   \hfill
   \begin{subfigure}[T]{0.50\linewidth}
     \frame{\includegraphics[scale=0.37]{images/eg12.png}}
-    \Description{Partial stepper trace for the map example, stopped at map([1, 2, 3], square), with highlighted next-step location and substitution annotations.}
-    \caption{Partial stepper trace for the map example, stopped at \code{map([1, 2, 3], square)}. Each line is one small-step transition. The green highlight at the bottom marks where the next step will be taken.}
+    \Description{Partial stepper trace for the map example, stopped at the first application of map, with highlighted next-step location and substitution annotations.}
+    \caption{Partial stepper trace for the map example, stopped at the first application of \code{map}.}
     \label{fig:full-trace}
   \end{subfigure}
   \caption{The stepper used on a list map example.}
 \end{figure}
 
-The factorial traces in \autoref{fig:intro-fac} illustrate why showing
-every step can be distracting: routine substitutions and arithmetic
-quickly obscure the reductions that matter. The partial trace in
-\autoref{fig:full-trace} shows the same issue arising for \code{map}.
-To address this, the Hazel stepper provides \emph{filter} annotations
+Even this short prefix shows the problem from
+Section~\ref{sec:intro}: the first two steps merely substitute
+definitions, before any interesting computation has happened, and
+each element of the list will add several more routine steps. To let
+users skip such steps, the Hazel stepper provides \emph{filter} annotations
 that the user embeds in the program text to control which steps appear
 in the trace.
 
-Each filter takes a \emph{pattern} that selects expressions by
-structure. Patterns use the same syntax as Hazel expressions, so
-every Hazel expression is also a valid pattern. Two additional forms
-are provided: \code{\$e}, which matches any expression, and
-\code{\$v}, which matches any value. For example,
-\code{map(\$v, \$v)} matches any application of \code{map} to two
-values. We give the formal pattern-matching rules in
-Section~\ref{sec:filter}. We provide four filter constructs:
-\begin{itemize}
-  \item \code{debug hide(\textit{pat})}: hide \emph{one} matching step.
-  \item \code{debug stop(\textit{pat})}: show \emph{one} matching step.
-  \item \code{debug eval(\textit{pat})}: hide \emph{all} evaluation steps for a matching sub-expression.
-  \item \code{debug step(\textit{pat})}: show \emph{all} evaluation steps for a matching sub-expression.
-\end{itemize}
-The first two (\code{hide}/\code{stop}) affect a single step, while the
-latter two (\code{eval}/\code{step}) affect the entire evaluation of a
-matching sub-expression.
+A filter consists of three parts: a pattern, an action, and a gas.
+
+\begin{description}
+  \item[Pattern.] A pattern selects expressions by structure.
+    Patterns use the same syntax as Hazel expressions, so every Hazel
+    expression is also a valid pattern, plus two wildcards: \code{\$e}
+    matches any expression and \code{\$v} matches any value. For
+    example, \code{map(\$v, \$v)} matches any application of
+    \code{map} to two values.
+  \item[Action.] The action says what to do with a step at which the
+    pattern matches: \emph{show} it, so that the stepper stops there,
+    or \emph{hide} it, so that the step is taken silently.
+  \item[Gas.] The gas says how long the action lasts. With gas
+    \emph{one}, the action applies only to the step at which the
+    pattern matches, and the next step is checked afresh; we call
+    such filters \emph{one-shot}. With gas \emph{all}, the action
+    applies to every step in the evaluation of the matched
+    sub-expression, even after it has reduced to something the
+    pattern no longer matches; we call such filters
+    \emph{persistent}.
+\end{description}
+
+\noindent The four filter primitives are the four combinations of
+action and gas, shown in Table~\ref{tbl:primitives}
+(Section~\ref{sec:filter} gives their formal semantics).
+
+\begin{table}[htbp]
+  \centering
+  \caption{The four filter primitives, by action and gas.}
+  \label{tbl:primitives}
+  \setlength{\tabcolsep}{10pt}
+  \begin{tabular}{lll}
+    \toprule
+    & \textbf{gas one} (one-shot) & \textbf{gas all} (persistent) \\
+    \midrule
+    \textbf{hide} & \code{debug hide(\textit{pat})} & \code{debug eval(\textit{pat})} \\
+    \textbf{show} & \code{debug stop(\textit{pat})} & \code{debug step(\textit{pat})} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 To illustrate, suppose we only want to see the recursive calls to
 \code{map}. In \autoref{fig:hide-stop-map} we add two filters:
-\code{debug hide(\$e)} hides every step, since \code{\$e} re-matches
-at every instrumentation pass, and \code{debug stop(map(\$v, \$v))}
-overrides the preceding hide to show any step taken from an
-expression containing \code{map} applied to two values. Since
+\code{debug hide(\$e)} hides every step, since \code{\$e} matches
+any expression, and \code{debug stop(map(\$v, square))}
+overrides the preceding hide to show any step at which \code{map}
+is applied to a value and \code{square}. Since
 \code{debug stop} is the inner of the two filters, it takes
 priority. The resulting trace (\autoref{fig:recursive-trace}) shows
 only the recursive \code{map} calls.
@@ -73,7 +100,7 @@ only the recursive \code{map} calls.
   \centering
   \begin{subfigure}[T]{0.40\linewidth}
     \frame{\includegraphics[scale=0.4]{images/eg21.png}}
-    \Description{Map example annotated with debug eval and debug stop filters to focus on recursive calls.}
+    \Description{Map example annotated with debug hide and debug stop filters to focus on recursive calls.}
     \caption{The code from \autoref{fig:hazel-map} with added \code{debug hide} and \code{debug stop} filters.}
     \label{fig:hide-stop-map}
   \end{subfigure}
@@ -93,14 +120,15 @@ evaluates. In \autoref{fig:debug-map} we add a \code{debug step}
 filter to achieve this. The result (\autoref{fig:debug-trace}) now
 includes not only the recursive \code{map} calls, but also the
 intermediate multiplications inside each \code{square} call. For
-instance, the third and sixth lines show \code{<square>(1)} and
-\code{<square>(2)} being expanded into their constituent steps.
+instance, the second and fifth lines show the applications
+\code{<square>(1)} and \code{<square>(2)}, and the lines after them
+show their bodies \code{1 * 1} and \code{2 * 2} being evaluated.
 
 \begin{figure}
   \centering
   \begin{subfigure}[T]{0.40\linewidth}
     \frame{\includegraphics[scale=0.30]{images/eg31.png}}
-    \Description{Map example with eval and step filters, including debug mode for square.}
+    \Description{Map example with debug hide, debug stop, and debug step filters, the last expanding each application of square.}
     \caption{The code from \autoref{fig:hazel-map} with added \code{debug hide}, \code{debug stop}, and \code{debug step} filters.}
     \label{fig:debug-map}
   \end{subfigure}
@@ -111,12 +139,12 @@ instance, the third and sixth lines show \code{<square>(1)} and
     \caption{Filtered trace with \code{debug step}: recursive \code{map} calls are visible (as before), and each \code{square} application is expanded to show its intermediate steps.}
     \label{fig:debug-trace}
   \end{subfigure}
-  \caption{A filtered stepper that demonstrates debug mode.}
+  \caption{A filtered stepper that expands each \code{square} application with \code{debug step}.}
 \end{figure}
 
-Note that \code{debug step} here overrides the earlier \code{debug hide}
+Note that \code{debug step} here overrides the enclosing \code{debug hide}
 and \code{debug stop}. Intuitively, the innermost filter surrounding
-the next reduction step takes priority, a form of lexical scoping.
+the next reduction step takes priority.
 In the next section, we formalize these filter primitives and their
 interactions as the \emph{Filtered Stepper Calculus}.
 

@@ -20,7 +20,7 @@ this with automated feedback on student-written Haskell
 programs~\cite{gerdes2017askelle}. Our work keeps the source-level,
 semantics-directed view of evaluation common to all of these systems, but
 gives users a finer-grained control: rather than picking a strategy globally,
-users embed lexically scoped patterns that select which reductions appear in
+users embed scoped patterns that select which reductions appear in
 the trace on a redex-by-redex basis.
 
 \paragraph{Programmer-directed focus.}
@@ -45,7 +45,7 @@ direct focus~\cite{khoo2013expositor}. On the imperative side, Boothe's
 bidirectional debugger gave programmers an event-counter-based language for
 navigating execution forwards and backwards along chosen event
 classes~\cite{boothe2000bidirectional}. Hazel filters extend this lineage with
-redex-structural patterns that compose through lexical scope and integrate
+redex-structural patterns that compose by nesting and integrate
 with an algebraic stepper.
 
 \paragraph{Lexically scoped source annotations.}

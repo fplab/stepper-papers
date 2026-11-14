@@ -32,19 +32,27 @@ applied to two values.''
 
 We address this gap with a \emph{scoped filter system} that gives
 users pattern-based control over which reduction steps are shown or
-hidden. Users write lightweight filter annotations, embedded directly
-in the program text, that specify patterns over expressions. A filter
-can \emph{hide} all steps matching a pattern, \emph{show} (stop at) steps
-matching a pattern, or apply these effects to the entire evaluation of
-a matched sub-expression rather than a single step. Filters compose
-naturally. An inner filter can override an outer one through lexical
-nesting, and a filter attached to a function body travels with the
-closure, taking effect wherever the function is called.
+hidden. Users write concise filter annotations, embedded directly
+in the program text, that specify patterns over expressions. Each
+filter is scoped to the evaluation of the sub-expression it annotates:
+it governs every step taken during that evaluation, including steps
+inside the functions it calls, and leaves the rest of the trace
+untouched. Within its scope, a filter checks its pattern before every
+step. A \emph{one-shot} filter \emph{hides} or \emph{shows} (stops at)
+just the step at which its pattern matches. A \emph{persistent} filter
+instead commits to the matched sub-expression and hides or shows every
+step of its evaluation. Filters compose naturally:
+an inner filter overrides an outer one, and a filter attached to a
+function body travels with the closure, taking effect wherever the
+function is called.
 
 Returning to the factorial example, suppose the instructor wants to
 show only the recursive calls and hide the routine arithmetic. Adding
 \code{debug eval(\$e)} hides every step, while \code{debug stop(fac(\$v))}
-overrides this on applications of \code{fac} to a value. The resulting
+overrides this on applications of \code{fac} to a value. Because
+\code{stop} is one-shot, it reveals only the call itself; the
+arithmetic inside each call is still hidden by the persistent
+\code{eval}. The resulting
 trace (Figure~\ref{fig:intro-fac-filtered}) shows only the key
 recursive calls and the final result.
 
@@ -75,7 +83,8 @@ We make the following contributions:
 \begin{itemize}
   \item We present the \emph{Filtered Stepper Calculus}, a formal
     semantics for scoped, pattern-based stepping control. We introduce
-    its filter primitives by example in Section~\ref{sec:examples} and
+    its four filter primitives (\code{hide}, \code{stop}, \code{eval},
+    and \code{step}) by example in Section~\ref{sec:examples} and
     formalize them in Section~\ref{sec:filter}, with preservation,
     progress, and simulation all mechanized in Agda.
   \item We implement the filtered stepper in Hazel
