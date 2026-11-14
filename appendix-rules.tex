@@ -8,11 +8,8 @@ evaluation contexts and the value judgment are given in
 body.
 
 \fbox{\([v / x] e = e'\)} \(e'\) can be obtained by substitution of \(v\) for
-\(x\) in expression \(e\).
-Here \(v\) need not be a value: fixpoint unrolling substitutes a
-fixpoint. Bound variables are alpha-renamed as needed; in every clause
-that descends beneath a binder \(y \neq x\), assume
-\(y \notin \mathrm{FV}(v)\).
+\(x\) in expression \(e\), renaming bound variables as needed so that
+no free variable of \(v\) is captured.
 \[
   \begin{aligned}
     [v / x] \Nat{n} &= \Nat{n} \\
@@ -29,8 +26,8 @@ that descends beneath a binder \(y \neq x\), assume
   \end{aligned}
 \]
 
-\fbox{\([v / x] p = p'\)} \(p'\) can be obtained by substitution of \(v\) for
-\(x\) in pattern \(p\).
+\fbox{\([v / x] p = p'\)} \(p'\) can be obtained by the same substitution on
+pattern \(p\), again renaming bound variables to avoid capture.
 \[
   \begin{aligned}
     [v / x] \$e &= \$e \\
