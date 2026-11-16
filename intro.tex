@@ -34,8 +34,10 @@ We address this gap with a \emph{scoped filter system} that gives
 users pattern-based control over which reduction steps are shown or
 hidden. Users write concise filter annotations, embedded directly
 in the program text, that specify patterns over expressions. Each
-filter is scoped to the evaluation of the sub-expression it annotates:
-it governs every step taken during that evaluation, including steps
+filter is dynamically scoped to the evaluation of the sub-expression
+it annotates, while names within the filters are resolved statically.
+Thus allows filters govern every step taken during evaluation of their
+enclosed sub-expression, including steps
 inside the functions it calls, and leaves the rest of the trace
 untouched. Within its scope, a filter checks its pattern before every
 step. A \emph{one-shot} filter \emph{hides} or \emph{shows} (stops at)
