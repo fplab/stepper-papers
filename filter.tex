@@ -183,7 +183,7 @@ up to the top-level stepping judgment.
 
 \subsubsection{Pattern matching.} The matching judgment determines
 when a sub-expression's structure conforms to a filter's pattern.
-Because filter and residue wrappers are purely instrumental, matching
+Since filter and residue wrappers are purely instrumental, matching
 ignores them (\textsc{M-Filter}, \textsc{M-Residue}). Matching also
 ignores bound-variable names: for example, \(\Lam{x}{x}\) and
 \(\Lam{y}{y}\) have the same binding structure. In the named
@@ -240,7 +240,9 @@ while searching for a redex. Here, \(a\) is the current
 action, \(l_a\) is the level at which action~\(a\) was selected,
 \(l_r\) is the highest level of a residue encountered or inserted
 along the current candidate path, and \(\mathcal{E}\) is the
-candidate context. The stack \(\Phi\) contains the filters in scope
+candidate context. 
+
+The stack \(\Phi\) contains the filters in scope
 at the current expression, innermost first.
 
 The inspected expression sits in the hole of \(\mathcal{E}\).
