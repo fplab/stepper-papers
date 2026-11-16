@@ -146,12 +146,11 @@
 % Stack-based dynamics. Contexts use ordinary hole-plugging notation.
 \newcommand{\StackDecompose}[5]{#1 \vdash #2 \Rightarrow #3 \{ #4 \} \dashv #5}
 \newcommand{\FilteredStep}[2]{#1 \twoheadrightarrow #2}
-\newcommand{\MatchUnder}[3]{#1 \vdash \Matches{#2}{#3}}
 \newcommand{\Plug}[2]{#1[#2]}
 \newcommand{\TopState}{\mathsf{top}}
-\DeclareMathOperator{\Lookup}{lookup}
-\DeclareMathOperator{\Bump}{bump}
-\DeclareMathOperator{\Keep}{keep}
+\newcommand{\Bump}[2]{\operatorname{bump}(#1,#2)}
+\newcommand{\Lookup}[3]{\operatorname{lookup}(#1,#2,#3)}
+\newcommand{\Keep}[3]{\operatorname{keep}(#1,#2,#3)}
 \DeclareMathOperator{\Patternize}{to\_pat}
 \newcommand{\StripResidues}[1]{\operatorname{strip}_{\delta}(#1)}
 

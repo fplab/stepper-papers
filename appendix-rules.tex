@@ -1,8 +1,7 @@
 \section{Standard Rules}\label{sec:standard_rules}
 
 This appendix collects the standard meta-functions and rules of the
-Filtered Stepper Calculus (substitution, decomposition, and
-composition) deferred from \autoref{sec:filter}. The syntax of
+Filtered Stepper Calculus (substitution and composition) deferred from \autoref{sec:filter}. The syntax of
 evaluation contexts and the value judgment are given in
 \autoref{fig:filter-syntax} and the accompanying rules in the main
 body.
@@ -58,86 +57,15 @@ that describes the stripped expression \(e\).
     \Patternize(\Residue{a}{l}{e}) &= \Patternize(e)
   \end{aligned}
 \]
-The mechanization proves, for any binder context \(B\),
-\(\MatchUnder{B}{\Patternize(e_1)}{e_2}\) if and only if
+The mechanization proves
+\(\Matches{\Patternize(e_1)}{e_2}\) if and only if
 \(\Strip{e_1} \equiv_\alpha \Strip{e_2}\).
 
 Residue-only stripping \(\StripResidues{e}\) has the same clauses as
 \(\Strip{e}\), except that it keeps filters:
 \(\StripResidues{\Filter{f}{e}} = \Filter{f}{\StripResidues{e}}\).
 
-\jbox{\(\StackDecompose{s}{e}{\mathcal{E}'}{e_0}{t}\)} Under state \(s\), expression \(e\) can be decomposed into context \(\mathcal{E}'\) and redex \(e_0\) with action and level \(t\).
-
-Write \(s=(\Phi,a,l_a,l_r,\mathcal{E})\) and \(q=(a,l_a,l_r)\). In
-the first three rules, \(e_1\mathbin{\odot}e_2\) stands for either
-application \(e_1(e_2)\) or addition \(e_1+e_2\), consistently within
-a rule. Neither operand rule has a value premise for its sibling.
-Values and variables have no decomposition rules. Typing ensures that
-the value operands exposed by \textsc{D-Bin-E} have the appropriate
-kinds for a transition.
-\begin{mathpar}
-  % Application and addition
-  \inferrule[D-Bin-L]{
-    \Lookup(\Phi,q,e_1\mathbin{\odot}e_2,\mathcal{E})=
-      ((a',l_a',l_r'),\mathcal{E}') \\
-    \StackDecompose{(\Phi,a',l_a',l_r',
-      \Plug{\mathcal{E}'}{\Mark\mathbin{\odot}e_2})}{e_1}{\mathcal{E}''}{e_0}{t}
-  }{
-    \StackDecompose{s}{e_1\mathbin{\odot}e_2}{\mathcal{E}''}{e_0}{t}
-  } \\
-  \inferrule[D-Bin-R]{
-    \Lookup(\Phi,q,e_1\mathbin{\odot}e_2,\mathcal{E})=
-      ((a',l_a',l_r'),\mathcal{E}') \\
-    \StackDecompose{(\Phi,a',l_a',l_r',
-      \Plug{\mathcal{E}'}{e_1\mathbin{\odot}\Mark})}{e_2}{\mathcal{E}''}{e_0}{t}
-  }{
-    \StackDecompose{s}{e_1\mathbin{\odot}e_2}{\mathcal{E}''}{e_0}{t}
-  } \\
-  \inferrule[D-Bin-E]{
-    \Value{v_1} \\ \Value{v_2} \\
-    \Lookup(\Phi,q,v_1\mathbin{\odot}v_2,\mathcal{E})=
-      ((a',l_a',l_r'),\mathcal{E}')
-  }{
-    \StackDecompose{s}{v_1\mathbin{\odot}v_2}{\mathcal{E}'}
-      {v_1\mathbin{\odot}v_2}{(a',l_a')}
-  } \\
-  % Fixpoint
-  \inferrule[D-Fix-E]{
-    \Lookup(\Phi,q,\Fix{x}{e},\mathcal{E})=
-      ((a',l_a',l_r'),\mathcal{E}')
-  }{
-    \StackDecompose{s}{\Fix{x}{e}}{\mathcal{E}'}{\Fix{x}{e}}{(a',l_a')}
-  } \\
-  % Filter
-  \inferrule[D-Filter-T]{
-    \StackDecompose{(f::\Phi,a,l_a,l_r,
-      \Plug{\mathcal{E}}{\Filter{f}{\Mark}})}{e}{\mathcal{E}'}{e_0}{t}
-  }{
-    \StackDecompose{s}{\Filter{f}{e}}{\mathcal{E}'}{e_0}{t}
-  } \\
-  \inferrule[D-Filter-E]{
-    \Value{v}
-  }{
-    \StackDecompose{s}{\Filter{f}{v}}{\mathcal{E}}{\Filter{f}{v}}
-      {(\ActSkip,l_a)}
-  } \\
-  % Residue
-  \inferrule[D-Residue-T]{
-    \Bump((a,l_a),b,n)=(a',l_a') \\
-    \mathcal{E}_k=\Keep(l_r,(b,n),\mathcal{E}) \\
-    \StackDecompose{(\Phi,a',l_a',\max(l_r,n),\mathcal{E}_k)}
-      {e}{\mathcal{E}'}{e_0}{t}
-  }{
-    \StackDecompose{s}{\Residue{b}{n}{e}}{\mathcal{E}'}{e_0}{t}
-  } \\
-  \inferrule[D-Residue-E]{
-    \Value{v} \\ \Bump((a,l_a),b,n)=(a',l_a')
-  }{
-    \StackDecompose{s}{\Residue{b}{n}{v}}{\mathcal{E}}
-      {\Residue{b}{n}{v}}{(\ActSkip,l_a')}
-  }
-\end{mathpar}
-
+\begin{samepage}
 \jbox{\(\Compose{e}{\mathcal{E}}{e'}\)} Expression \(e\) can be obtained by plugging \(e'\) into the mark of \(\mathcal{E}\).
 We also write \(\Plug{\mathcal{E}}{e'}\) for this \(e\), and
 \(\Plug{\mathcal{E}}{\mathcal{E}_0}\) for the context obtained by
@@ -178,6 +106,7 @@ plugging \(\mathcal{E}_0\) into the mark of \(\mathcal{E}\).
     \Compose{\Residue{a}{l}{e}}{\Residue{a}{l}{\mathcal{E}}}{e'}
   }
 \end{mathpar}
+\end{samepage}
 
 %%% Local Variables:
 %%% mode: LaTeX

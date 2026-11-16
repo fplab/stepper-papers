@@ -25,12 +25,12 @@ Otherwise it returns the list of available redexes to the caller.
 
 Because the reference implementation uses substitution-based evaluation
 and named variables, it corresponds closely to the on-paper calculus and
-is easy to audit against the formal rules. We test the stepper with 31
-regression tests and 14 QCheck2 properties, each run on 5,000 generated
-examples. These check reconstruction up to residues, residue
-invariants, progress for typed closed terms, and simulation of
-unfiltered evaluation. For terminating programs without fixpoints, we
-also compare results with an independent closure-based evaluator.
+is easy to audit against the formal rules. We test the stepper against
+known results (e.g., verifying that \texttt{fac(5)} evaluates to 120).
+On the common subset of the two calculi (lambda calculus with addition,
+fixpoints, and filters), the reference implementation can also be used
+to check the Hazel integration by running the same program in both
+implementations and comparing the results.
 
 \subsection{Hazel Integration}\label{sec:impl-hazel}
 
@@ -53,7 +53,7 @@ context. When the stepper displays a step to the user, a
 post-processing pass replaces all bound variables with their
 environment bindings, producing output that looks substitution-based.
 
-The filter system in Hazel uses a stack of active filters and residues
+The filter system in Hazel uses a stack of filters in scope and residues
 over Hazel's richer expression language, which includes
 pattern matching, sum and product types, type ascriptions, and typed
 holes. Filter matching uses a semantic equality check with special
@@ -67,12 +67,9 @@ while a few others (closure-wrapping, residue bookkeeping) are
 unconditionally hidden because they correspond to internal machinery
 rather than user-visible reductions.
 
-% We moved the content of performance section to be alongside with the
-% Optimization rule (O-*).
-
 \subsection{Performance}\label{sec:impl-perf}
 
-The stack-based traversal consults active filters as it discovers
+The stack-based traversal consults filters in scope as it discovers
 redexes. Each lookup creates at most one residue, for its first
 persistent match; one-shot matches allocate no residues. The residue
 level cuts off filters whose actions are already covered along the
@@ -81,23 +78,9 @@ candidate context when an enclosing residue already covers its level.
 
 The mechanized bounds in Theorem~\ref{thm:residue-bounds} make this
 structural guarantee precise. Along one candidate path, newly inserted
-residue priorities strictly increase and are bounded by the active
-filter depth. Reconstructing an individual candidate adds at most one
-residue per filter occurrence in the input expression. These
-statements concern candidate paths before reduction; they are not a
-global bound on residues across all stored sub-expressions or all
-candidates, and do not bound term growth caused by substitution.
-
-Pattern matching remains a cost of decomposition. If a traversal
-performs lookup at $m$ nodes and at most $k$ filters are active, it
-makes at most $mk$ pattern-match queries. The time per query depends on
-the pattern, the inspected expression, and wrappers traversed during
-matching. Constructing candidate contexts, enumerating redexes,
-substitution, and restarting after silent reductions incur additional
-costs. The residue bounds do not establish an end-to-end runtime bound
-or a measured speedup; they establish that decomposition avoids
-repeatedly recording the same or lower-priority action along a candidate
-path.
+residue levels strictly increase and are bounded by the filter stack
+depth. Reconstructing an individual candidate adds at most one
+residue per filter occurrence in the input expression.
 
 %%% Local Variables:
 %%% mode: LaTeX
