@@ -15,6 +15,7 @@
 *.nav
 *.snm
 *.vrb
+*.vtc
 
 # Build output (acmguide.pdf is checked in; main.pdf is generated)
 main.pdf

@@ -1,5 +1,5 @@
 
-\paragraph{Algebraic steppers.}
+\paragraph*{Algebraic steppers.}
 Algebraic steppers for functional languages have long served pedagogy. The
 DrScheme/Racket algebraic stepper presents small-step reductions that mirror
 operational semantics, with formal correctness arguments for its
@@ -23,7 +23,7 @@ gives users a finer-grained control: rather than picking a strategy globally,
 users embed scoped patterns that select which reductions appear in
 the trace on a redex-by-redex basis.
 
-\paragraph{Programmer-directed focus.}
+\paragraph*{Programmer-directed focus.}
 Bertot's occurrence-based debugger specifications and Bernstein and Stark's
 focusing debugger formalize how users can direct debugging attention to
 particular source-level
@@ -48,7 +48,7 @@ classes~\cite{boothe2000bidirectional}. Hazel filters extend this lineage with
 redex-structural patterns that compose by nesting and integrate
 with an algebraic stepper.
 
-\paragraph{Lexically scoped source annotations.}
+\paragraph*{Lexically scoped source annotations.}
 The methodological pattern of attaching lightweight, lexically scoped
 annotations to source code to control a dynamic observation has a direct
 ancestor in profiling. Sansom and Peyton Jones introduced \emph{cost centres}
@@ -60,7 +60,7 @@ methodological shape. A lexically scoped construct in the source does not
 affect the result of evaluation, but governs how a dynamic event (cost
 attribution there, step visibility here) is attributed to source regions.
 
-\paragraph{Tracing tools for functional languages.}
+\paragraph*{Tracing tools for functional languages.}
 Tracing tools record the reduction history of a computation for later
 inspection. An early source-level debugger from Standard ML by Tolmach and
 Appel used source-to-source instrumentation and first-class continuations to
@@ -85,7 +85,7 @@ fault in lazy code~\cite{gissurarson2023csi}. Our stepper similarly maintains
 a step history, but the trace is \emph{filtered} by user-specified patterns
 rather than recorded uniformly.
 
-\paragraph{Pattern languages and term-rewriting strategies.}
+\paragraph*{Pattern languages and term-rewriting strategies.}
 Our filter language is also related to program-pattern and
 strategy-controlled rewriting systems. SCRUPLE and ASTLOG use structural
 patterns to query program trees~\cite{paul1994scruple,crew1997astlog}.
@@ -97,7 +97,7 @@ kernel~\cite{padioleau2008coccinelle}. Hazel filters use a smaller pattern
 language and do not let users change the evaluator. Instead, patterns control
 the visibility of steps produced by a fixed algebraic stepper.
 
-\paragraph{Programming education context.}
+\paragraph*{Programming education context.}
 More broadly, our stepper sits within a long-running line of work on program
 visualization and \emph{notional machines} for introductory programming
 education. Sorva, Karavirta, and Malmi survey generic visualization systems
@@ -109,7 +109,7 @@ block-based programming environment for empirical study --- illustrates that
 the question of how best to render evaluation comprehensible to students
 remains an active research concern~\cite{clements2022notional}.
 
-\paragraph{Hazel substrate.}
+\paragraph*{Hazel substrate.}
 Hazelnut-style structural editing and semantics for incomplete programs make
 the AST explicit at all times, which naturally supports tree-pattern matching
 and stepping in the presence of holes~\cite{omar2017hazelnut,omar2019live}.

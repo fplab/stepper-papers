@@ -126,7 +126,7 @@ outermost to innermost, so these filters receive priorities 1 and 2.
 % highest residue priority encountered or inserted on the current path.
 % Both start at 0.
 
-\paragraph{First step.}
+\paragraph*{First step.}
 Entering the filters pushes them onto a stack. At the outermost
 addition, \code{(1 + 2 + 3) + 4}, the stepper first tests the priority-2 pattern, 
 which does not match, and then the priority-1 pattern, which does.
@@ -153,7 +153,7 @@ The residue remembers the location of the first match, and that it was a
 \(\ActSkip\) action with priority 1, even though the original
 \code{1 + 2 + 3 + 4} pattern no longer matches.
 
-\paragraph{Second step.}
+\paragraph*{Second step.}
 The traversal starts again at the root, rebuilding the filter stack
 as it passes through the two filters. It will then reach the residue
 where it will restore the skip action record priority 1.
@@ -752,7 +752,7 @@ these counts in the statement, since the corollary we care about, that
 the stepper does not invent reductions, follows from the existence of
 any such derivation.
 
-\paragraph{Residue invariants and bounds.}
+\paragraph*{Residue invariants and bounds.}
 Decomposition never visits a binder body. Starting from a program with
 no residues, every reachable residue names an in-scope persistent filter at
 the same level with the same action; no residue

@@ -12,50 +12,19 @@
 %TC:envir math 0 word
 %TC:envir comment 0 0
 
-%%
-%% Programming 2026
-%%
+%% ECOOP anonymous submission (Dagstuhl LIPIcs).
+\documentclass[a4paper,USenglish,anonymous,autoref]{lipics-v2021}
+\hideLIPIcs
 
-% \documentclass[english,submission]{programming}
-
-% \paperdetails{
-%   perspective=sciencetheoretical,
-%   area={Visual and live programming, Programming education, Programming environments},
-% }
-
-% \usepackage{mathtools}
-% \usepackage{amsthm}
-% \usepackage{ebproof}
-% \usepackage{mathpartir}
-
-% \newtheorem{theorem}{Theorem}[section]
-% \providecommand{\Description}[1]{}
-
-%%
-%% ESOP 2026 (Using LNCS)
-%%
-
-\documentclass[runningheads]{llncs}
-
-\usepackage[T1]{fontenc}
-\usepackage{graphicx}
+% LIPIcs provides fonts, graphics, listings, subcaption, AMS theorem
+% environments, and hyperref. Load only the additional packages used here.
 \usepackage{xcolor}
-\usepackage{listings}
-\usepackage{subcaption}
 \usepackage{booktabs}
-\usepackage{amssymb}
 \usepackage{mathtools}
 \usepackage{ebproof}
 \usepackage{mathpartir}
 \usepackage{microtype}
-
-% LNCS already defines the `theorem`, `lemma`, `proof`, etc. environments,
-% so we do not redefine them here.
 \providecommand{\Description}[1]{}
-
-%%
-%% Premable ends here
-%%
 
 \lstset{
   escapeinside={@}{@},
@@ -100,62 +69,28 @@
 \newcommand{\fcaseR}{\mathsf{R}}
 \DeclareMathOperator{\instr}{\mathsf{instr}}
 
-% hyperref should be loaded last per Springer LNCS guidance; provides \autoref.
-\usepackage{hyperref}
-\renewcommand{\sectionautorefname}{Section}
-\renewcommand{\subsectionautorefname}{Section}
-\renewcommand{\subsubsectionautorefname}{Section}
+% Keep section references consistent when Babel selects US English.
+\addto\extrasUSenglish{%
+  \renewcommand{\sectionautorefname}{Section}%
+  \renewcommand{\subsectionautorefname}{Section}%
+  \renewcommand{\subsubsectionautorefname}{Section}%
+}
+
+\title{Practical Algebraic Stepping with Scoped Filters}
+\titlerunning{Practical Algebraic Stepping with Scoped Filters}
+
+% Replace these placeholders with author metadata for the camera-ready version.
+\author{Anonymous Author}{Anonymous Institution}{}{}{}
+\authorrunning{Anonymous Authors}
+\Copyright{Anonymous Authors}
+
+\ccsdesc[500]{Theory of computation~Operational semantics}
+\ccsdesc[300]{Software and its engineering~Integrated and visual development environments}
+\ccsdesc[500]{Software and its engineering~Software testing and debugging}
+\keywords{algebraic steppers, live programming, program tracing,
+  operational semantics, programming education}
 
 \begin{document}
-
-%%
-%% The "title" command has an optional parameter,
-%% allowing the author to define a "short title" to be used in page headers.
-\title{Practical Algebraic Stepping with Scoped Filters}
-
-% TODO: Replace anonymous metadata with author names and affiliations.
-\author{Anonymous Authors}
-\authorrunning{Anonymous Authors}
-\institute{Anonymous Institution}
-
-% \author{Haoxiang Fei \and Matthew Keenan \and Cyrus Omar}
-% \authorrunning{H. Fei et al.}
-% \institute{University of Michigan, Ann Arbor, MI, USA\\
-%   \email{\{fettes,mckeenan,comar\}@umich.edu}}
-
-%%
-%% CCS Tags, used for Programming 2026
-%%
-
-% \begin{CCSXML}
-% <ccs2012>
-%    <concept>
-%        <concept_id>10011007.10011006.10011066.10011069</concept_id>
-%        <concept_desc>Software and its engineering~Integrated and visual development environments</concept_desc>
-%        <concept_significance>300</concept_significance>
-%        </concept>
-%    <concept>
-%        <concept_id>10003752.10010124.10010131.10010134</concept_id>
-%        <concept_desc>Theory of computation~Operational semantics</concept_desc>
-%        <concept_significance>500</concept_significance>
-%        </concept>
-%    <concept>
-%        <concept_id>10003456.10003457.10003527.10003531.10003533.10011595</concept_id>
-%        <concept_desc>Social and professional topics~CS1</concept_desc>
-%        <concept_significance>300</concept_significance>
-%        </concept>
-%    <concept>
-%        <concept_id>10011007.10011074.10011099.10011102.10011103</concept_id>
-%        <concept_desc>Software and its engineering~Software testing and debugging</concept_desc>
-%        <concept_significance>500</concept_significance>
-%        </concept>
-%  </ccs2012>
-% \end{CCSXML}
-
-% \ccsdesc[300]{Software and its engineering~Integrated and visual development environments}
-% \ccsdesc[500]{Theory of computation~Operational semantics}
-% \ccsdesc[300]{Social and professional topics~CS1}
-% \ccsdesc[500]{Software and its engineering~Software testing and debugging}
 
 \maketitle
 
@@ -183,9 +118,6 @@
   evaluation shows that students adopt the stepper organically, though more advanced uses of filters may require further instruction, and
   that instructors can use filters to craft focused traces for
   use in lectures.
-    
-  \keywords{algebraic steppers, live programming, program tracing,
-    operational semantics, programming education}
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -214,18 +146,14 @@
 
 \input{discussion}
 
-\bibliographystyle{splncs04}
+\bibliographystyle{plainurl}
 \bibliography{references}
 
 \appendix
-\renewcommand{\theHsection}{\Alph{section}}
 \input{appendix-rules}
 
 \end{document}
 \endinput
-%%
-%% End of file `sample-acmsmall.tex'.
-
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
