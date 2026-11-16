@@ -111,25 +111,34 @@ debug stop(3 + 3 + 4) in
 \end{lstlisting}
 \noindent which sums the numbers from 1 to 4 left-associatively. Before
 stepping, the stepper starts with the default action \(\ActStep\) at
-level 0, so that every step is shown unless an explicit filter says
-otherwise. The explicit filters are assigned levels sequentially from
-outermost to innermost, so these filters receive levels 1 and 2.
+priority 0, so that every step is shown unless an explicit filter says
+otherwise. The explicit filters are assigned priorities sequentially from 
+outermost to innermost, so these filters receive priorities 1 and 2.
+
+% In nesting order from outermost to innermost, the two
+% explicit filters will receive priorities 1 and 2.
+% Outermost gets the lowest priority so that inner filters can
+% override outer ones during action selection: as with dynamic binding,
+% the innermost filter in effect when a step is taken has the final
+% say. Decomposition carries two levels: the \emph{action
+% level} \(l_a\), which records the priority that selected the current
+% action, and the \emph{residue level} \(l_r\), which records the
+% highest residue priority encountered or inserted on the current path.
+% Both start at 0.
 
 \paragraph{First step.}
 Entering the filters pushes them onto a stack. At the outermost
-addition, \code{(1 + 2 + 3) + 4}, it first tests the level-2 filter
-\code{debug stop(3 + 3 + 4)}, which does not match, and then the
-level-1 filter \code{debug eval(1 + 2 + 3 + 4)}, which does.
-Here \code{eval} specifies \((a,g)=(\ActSkip,\GasAll)\)
-(Table~\ref{tbl:filter-syntax-sugar}). Since the level-1 filter is
-persistent, applying to the full evaluation of the matched expression,
-a residue is inserted around the whole sum recording its
-\(\ActSkip\) action and level 1.
+addition, \code{(1 + 2 + 3) + 4}, the stepper first tests the priority-2 pattern, 
+which does not match, and then the priority-1 pattern, which does.
+Since the filter is persistent (i.e. it applies to the full evaluation of
+the patten until completion), a residue is inserted around the
+whole sum recording the action and priority of the filter that
+decided that action for this sub-expression.
 
-The current action is now \(\ActSkip\) at level 1. We continue
-to traverse through the code until we reach the redex \code{1 + 2}.
-Since level 1 is covered by the residue, we now only need to test filters
-at higher levels. The level-2 filter is tested at the inner additions
+The current action is now \(\ActSkip\) with priority $1$. We continue
+to traverse through the code until we reach the redex \code{1 + 2}. 
+Since we are at priority 1, we now only need to test filters with a
+higher priority. The priority-2 filter is tested at the inner additions
 but still does not match.
 
 Since decomposition reached the \code{1 + 2} redex with a \(\ActSkip\) action,
@@ -141,23 +150,21 @@ prefix elided for brevity, the new expression is:
 @\(\prescript{\ActSkip}{}{\langle}\)@3 + 3 + 4@\(\rangle^{1}\)@
 \end{lstlisting}
 The residue remembers the location of the first match, and that it was a
-\(\ActSkip\) action at level 1, even though the original
+\(\ActSkip\) action with priority 1, even though the original
 \code{1 + 2 + 3 + 4} pattern no longer matches.
 
 \paragraph{Second step.}
 The traversal starts again at the root, rebuilding the filter stack
 as it passes through the two filters. It will then reach the residue
-where it will restore the skip action at level 1.
+where it will restore the skip action record priority 1.
 
-The expression just inside the residue, however, now matches the level-2
-filter's pattern \code{3 + 3 + 4}. Thus we change the action to
-\(\ActStep\) at level 2. Since the level-2 filter is one-shot,
-we do not add a residue.
+The expression just inside the residue, however, now matches \code{3 + 3 + 4},
+Thus we change the action to \(\ActStep\) with priority 2. Since the priority-2
+filter is a one-shot action, we do not add a residue.
 
 Decomposition thus yields \(\ActStep\) at \code{3 + 3}, and the stepper
-pauses for user input (Figure~\ref{fig:simple_example_final_ui}). Once the
-user decides to step, the stepper transitions
-\code{3 + 3} to \code{6}. The level-1 residue remains on \code{6 + 4},
+pauses for user input. Once the user decides to step, the stepper transitions
+\code{3 + 3} to \code{6}. The priority-1 residue remains on \code{6 + 4},
 so the stepper will continue to fully evaluate the rest of the steps in
 the original \code{1 + 2 + 3 + 4} expression, having paused only for the
 \code{3 + 3 + 4} step.
