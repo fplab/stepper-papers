@@ -249,117 +249,208 @@ expression, and \(\Plug{\mathcal{E}}{\mathcal{E}_0}\) for filling
 it with another context (Appendix~\ref{sec:standard_rules}). The
 search starts with an empty filter stack and the default state
 \(s_0=(\ActStep,0,0,\Mark)\); we write
-\(\TopState=([],s_0)\).`
+\(\TopState=([],s_0)\).
 
-\subsubsection{Action selection.} The {\it lookup} function is called at
-every sub-expression during the decomposition traversal. It decides
-which action should become active, and whether to add a residue.
-
-The lookup function takes the set of filters \(\Phi\), the current
-action and levels \(q = (a, l_a, l_r)\), the current expression $e$, and its context 
-\(\mathcal{E}\). It returns the new action and levels, and a new context.
-
+\subsubsection{Action selection.} The function
+\(\Lookup{\Phi}{e}{s}\) looks up filters in \(\Phi\) whose patterns
+match \(e\), updating \(s\) using their actions and gas.
+The action level \(l_a\) determines whether a matching filter can
+override the current action; the residue level \(l_r\) determines
+which levels are already covered by a residue.
+The head filter of \((p,a_f,g)::\Phi\) has
+action~\(a_f\) and level \(l_f=1+|\Phi|\). The helper
+\(\mathsf{bump}\) compares the current pair \((a,l_a)\) with the
+filter's pair \((a_f,l_f)\):
 \[
- \Lookup(\Phi,q,e,\mathcal{E})=(q',\mathcal{E}').
+  \Bump{(a,l_a)}{(a_f,l_f)} =
+  \begin{cases}
+    (a_f,l_f) & \text{if } l_f>l_a,\\
+    (a,l_a) & \text{if } l_f\leq l_a.
+  \end{cases}
 \]
+\jbox{\(\Lookup{\Phi}{e}{s}=s'\)}
+Scanning filter stack \(\Phi\) against expression \(e\) updates
+state \(s\) to \(s'\).
 
-There are two tracked levels: $l_a$ records the level
-of the current action, and is used to decide whether a new action can
-override it. $l_r$ records the highest level of any residue residues
-in the context \(\mathcal{E}\), and is used to avoid adding superfluous
-residues, since any residue with a lower priority than $l_r$
-cannot affect this sub-expression, and any residue with an equal priority
-will simply be the same residue.
-
-The lookup function is defined using the following rules. We use the following
-shorthands: The \(\Bump((a,l_a),a',l_a')\) function returns the (action, level) 
-pair with the highest priority. Filters are abbreviated \(f=(p,b,g)\), and
-actions and levels are abbreviated \(q=(a,l_a,l_r)\). The quantity \(n = 1 + |\Phi|\)
-is equal to the priority of the current filter (and since filters are
-recorded in order, the maximum priority any filter still in the filter stack).
-
+The stack is scanned from innermost to outermost. An empty stack
+or a level already covered by \(l_r\) ends the
+scan; a non-matching filter is passed over.
 \begin{mathpar}
- \inferrule[L-Empty]{ }{
-   \Lookup([],q,e,\mathcal{E})=(q,\mathcal{E})} \qquad
- \inferrule[L-Cut]{n\leq l_r}{
-   \Lookup(f::\Phi,q,e,\mathcal{E})=(q,\mathcal{E})}
+ \inferrule[L-Empty]{ }{\Lookup{[]}{e}{s}=s}
+ \qquad
+ \inferrule[L-Cut]{l_f\leq l_r}{\Lookup{(p,a_f,g)::\Phi}{e}{s}=s}
  \\
- \inferrule[L-Miss]{
-   n>l_r \\ \neg(\MatchUnder{\varnothing}{p}{e}) \\
-   \Lookup(\Phi,q,e,\mathcal{E})=(q',\mathcal{E}')
- }{\Lookup(f::\Phi,q,e,\mathcal{E})=(q',\mathcal{E}')}
- \\
- \inferrule[L-One]{
-   n>l_r \\ \MatchUnder{\varnothing}{p}{e} \\ g=\GasOne \\
-   \Bump((a,l_a),b,n)=(a',l_a') \\
-   \Lookup(\Phi,(a',l_a',l_r),e,\mathcal{E})=(q',\mathcal{E}')
- }{\Lookup(f::\Phi,q,e,\mathcal{E})=(q',\mathcal{E}')}
- \\
- \inferrule[L-All]{
-   n>l_r \\ \MatchUnder{\varnothing}{p}{e} \\ g=\GasAll \\
-   \Bump((a,l_a),b,n)=(a',l_a')
- }{\Lookup(f::\Phi,q,e,\mathcal{E})=
-   ((a',l_a',n),\Plug{\mathcal{E}}{\Residue{b}{n}{\Mark}})}
+ \inferrule[L-Miss]{l_f>l_r \\ \neg(\Matches{p}{e})}{
+   \Lookup{(p,a_f,g)::\Phi}{e}{s}=\Lookup{\Phi}{e}{s}}
 \end{mathpar}
 
-For example, suppose an inner priority-2 \code{debug stop(\$e)} and an
-outer priority-1 \code{debug eval(\$e)} both match the current
+A one-shot match (\(g=\GasOne\)) uses \(\mathsf{bump}\) to update the action and
+its level, then continues scanning with the same residue level
+and context. A persistent match (\(g=\GasAll\)) updates the action in the same way,
+adds a residue carrying the filter's own action~\(a_f\), and ends
+the scan.
+\begin{mathpar}
+ \inferrule[L-One]{
+   l_f>l_r \\ \Matches{p}{e} \\
+   \Bump{(a,l_a)}{(a_f,l_f)}=(a',l_a')
+ }{\Lookup{(p,a_f,\GasOne)::\Phi}{e}{s}
+    =\Lookup{\Phi}{e}{(a',l_a',l_r,\mathcal{E})}}
+ \\
+ \inferrule[L-All]{
+   l_f>l_r \\ \Matches{p}{e} \\
+   \Bump{(a,l_a)}{(a_f,l_f)}=(a',l_a')
+ }{\Lookup{(p,a_f,\GasAll)::\Phi}{e}{s}
+    =(a',l_a',l_f,\Plug{\mathcal{E}}{\Residue{a_f}{l_f}{\Mark}})}
+\end{mathpar}
+
+For example, suppose an inner level-2 \code{debug stop(\$e)} and an
+outer level-1 \code{debug eval(\$e)} both match the current
 addition, starting with both levels at zero. \textsc{L-One} selects
 \(\ActStep\) at action level 2, then \textsc{L-All} records the
-outer filter's \(\ActSkip\) at residue level 1. The resulting
-action and levels are \((\ActStep,2,1)\). The residue records its own
-filter's action, not the action selected by the inner one-shot match.
+outer filter's \(\ActSkip\) at residue level 1. Lookup returns
+\(a'=\ActStep\), \(l_a'=2\), and \(l_r'=1\), with the residue
+inserted into the returned context.
 
-Existing residues compete for the action in the same way. Whether a
-residue remains in the candidate context is a separate decision:
-\[
-\begin{aligned}
- \Keep(l_r,(b,n),\mathcal{E}) &=
- \begin{cases}
-  \Plug{\mathcal{E}}{\Residue{b}{n}{\Mark}} & n>l_r,\\
-  \mathcal{E} & n\leq l_r.
- \end{cases}
-\end{aligned}
-\]
-A residue is redundant if an enclosing residue already records an
-equal or higher priority. Either way, descent raises the residue level to \(\max(l_r,n)\). These updates
-concern the selected path, not the unvisited sibling sub-expressions.
-
-\subsubsection{Decomposition.} The decomposition judgment splits an
-expression \(e\) into an evaluation context \(\mathcal{E}\) and a
-redex \(e_0\) such that plugging \(e_0\) into the hole of
-\(\mathcal{E}\) recovers \(e\) up to residues. Decomposition is
+\subsubsection{Decomposition.} Decomposition of \(e\) produces a
+context--redex pair \(\mathcal{E}'\{e_0\}\) with action \(a'\)
+at level \(l_a'\). Decomposition is
 non-deterministic: when an expression has multiple redexes (e.g., both
 operands of an addition are reducible), there is a choice of which to
-expose. Both operands are searched independently; a right operand need
-not wait for the left to become a value. At applications, additions,
-and fixpoints, lookup is performed before selecting a redex or
-descending further. Entering a filter pushes it onto the stack, and
-reading a residue updates the action and both levels as described
-above. A fixpoint is exposed without descending into its body. There
-is one critical exception: a filter or residue wrapping a \emph{value}
-is itself a redex, always marked \(\ActSkip\)
-(\textsc{D-Filter-E}, \textsc{D-Residue-E} in
-Appendix~\ref{sec:standard_rules}). This is how the
-\textsc{T-Filter} and \textsc{T-Residue} transitions below ever
-fire: once a sub-expression has finished evaluating to a value, its
-surrounding filter and residue wrappers become reducible and are
-stripped one at a time. Without this case, residues would
-accumulate forever around finalized values.
+expose.
 
-A state \(s=(\Phi,a,l_a,l_r,\mathcal{E})\) describes an expression
-sitting in the hole of \(\mathcal{E}\). The judgment returns a
-candidate redex, its updated context, and its action and action level.
-The initial state is \(\TopState=([],\ActStep,0,0,\Mark)\).
+We define a helper function \(\mathsf{keep}\) to decide whether
+to retain a residue in the context:
+\[
+  \Keep{l_r}{(a_r,l)}{\mathcal{E}} =
+  \begin{cases}
+    \Plug{\mathcal{E}}{\Residue{a_r}{l}{\Mark}}
+      & \text{if } l>l_r,\\
+    \mathcal{E} & \text{if } l\leq l_r.
+  \end{cases}
+\]
+An enclosing residue already covers levels at or below \(l_r\).
 
-\jbox{\(\StackDecompose{s}{e}{\mathcal{E}'}{e_0}{(a',l_a')}\)}
-Under state \(s\), expression \(e\) decomposes into context
-\(\mathcal{E}'\) with redex \(e_0\) and action \(a'\) at level \(l_a'\).
+A filter or residue wrapping a \emph{value} is itself a redex,
+always marked \(\ActSkip\) (\textsc{D-Filter-E},
+\textsc{D-Residue-E}). These cases return the whole wrapper in the
+original context, so \textsc{T-Filter} and \textsc{T-Residue} can
+remove it.
+
+\jbox{\(\StackDecompose{(\Phi,s)}{e}{\mathcal{E}'}{e_0}{(a',l_a')}\)}
+Under filter stack \(\Phi\) and state \(s\), expression \(e\)
+decomposes into context \(\mathcal{E}'\) with redex \(e_0\) and
+action \(a'\) at level \(l_a'\).
+
+Here, \(s=(a,l_a,l_r,\mathcal{E})\), and \(t\) is an action--level pair.
+\begin{mathpar}
+  % Application
+  \inferrule[D-Ap-L]{
+    \Lookup{\Phi}{e_1(e_2)}{s}
+      =(a',l_a',l_r',\mathcal{E}') \\
+    \StackDecompose{(\Phi,(a',l_a',l_r',
+      \Plug{\mathcal{E}'}{\Mark(e_2)}))}{e_1}{\mathcal{E}''}{e_0}{t}
+  }{
+    \StackDecompose{(\Phi,s)}{e_1(e_2)}{\mathcal{E}''}{e_0}{t}
+  }
+\end{mathpar}
+\begin{mathpar}
+  \inferrule[D-Ap-R]{
+    \Lookup{\Phi}{e_1(e_2)}{s}
+      =(a',l_a',l_r',\mathcal{E}') \\
+    \StackDecompose{(\Phi,(a',l_a',l_r',
+      \Plug{\mathcal{E}'}{e_1(\Mark)}))}{e_2}{\mathcal{E}''}{e_0}{t}
+  }{
+    \StackDecompose{(\Phi,s)}{e_1(e_2)}{\mathcal{E}''}{e_0}{t}
+  }
+\end{mathpar}
+\begin{mathpar}
+  \inferrule[D-Ap-E]{
+    \Value{v_1} \\ \Value{v_2} \\
+    \Lookup{\Phi}{v_1(v_2)}{s}
+      =(a',l_a',l_r',\mathcal{E}')
+  }{
+    \StackDecompose{(\Phi,s)}{v_1(v_2)}{\mathcal{E}'}
+      {v_1(v_2)}{(a',l_a')}
+  }
+\end{mathpar}
+\begin{mathpar}
+  % Addition
+  \inferrule[D-Add-L]{
+    \Lookup{\Phi}{e_1+e_2}{s}
+      =(a',l_a',l_r',\mathcal{E}') \\
+    \StackDecompose{(\Phi,(a',l_a',l_r',
+      \Plug{\mathcal{E}'}{\Mark+e_2}))}{e_1}{\mathcal{E}''}{e_0}{t}
+  }{
+    \StackDecompose{(\Phi,s)}{e_1+e_2}{\mathcal{E}''}{e_0}{t}
+  }
+\end{mathpar}
+\begin{mathpar}
+  \inferrule[D-Add-R]{
+    \Lookup{\Phi}{e_1+e_2}{s}
+      =(a',l_a',l_r',\mathcal{E}') \\
+    \StackDecompose{(\Phi,(a',l_a',l_r',
+      \Plug{\mathcal{E}'}{e_1+\Mark}))}{e_2}{\mathcal{E}''}{e_0}{t}
+  }{
+    \StackDecompose{(\Phi,s)}{e_1+e_2}{\mathcal{E}''}{e_0}{t}
+  }
+\end{mathpar}
+\begin{mathpar}
+  \inferrule[D-Add-E]{
+    \Value{v_1} \\ \Value{v_2} \\
+    \Lookup{\Phi}{v_1+v_2}{s}
+      =(a',l_a',l_r',\mathcal{E}')
+  }{
+    \StackDecompose{(\Phi,s)}{v_1+v_2}{\mathcal{E}'}
+      {v_1+v_2}{(a',l_a')}
+  }
+\end{mathpar}
+\begin{mathpar}
+  % Fixpoint
+  \inferrule[D-Fix-E]{
+    \Lookup{\Phi}{\Fix{x}{e}}{s}=(a',l_a',l_r',\mathcal{E}')
+  }{
+    \StackDecompose{(\Phi,s)}{\Fix{x}{e}}{\mathcal{E}'}{\Fix{x}{e}}{(a',l_a')}
+  }
+\end{mathpar}
+\begin{mathpar}
+  % Filter
+  \inferrule[D-Filter-T]{
+    \StackDecompose{(f::\Phi,(a,l_a,l_r,
+      \Plug{\mathcal{E}}{\Filter{f}{\Mark}}))}{e}{\mathcal{E}'}{e_0}{t}
+  }{
+    \StackDecompose{(\Phi,s)}{\Filter{f}{e}}{\mathcal{E}'}{e_0}{t}
+  }
+\end{mathpar}
+\begin{mathpar}
+  \inferrule[D-Filter-E]{\Value{v}}{
+    \StackDecompose{(\Phi,s)}{\Filter{f}{v}}{\mathcal{E}}{\Filter{f}{v}}
+      {(\ActSkip,l_a)}
+  }
+\end{mathpar}
+\begin{mathpar}
+  % Residue
+  \inferrule[D-Residue-T]{
+    \Bump{(a,l_a)}{(a_r,l)}=(a',l_a') \\
+    \Keep{l_r}{(a_r,l)}{\mathcal{E}}=\mathcal{E}_k \\
+    \StackDecompose{(\Phi,(a',l_a',\max(l_r,l),\mathcal{E}_k))}
+      {e}{\mathcal{E}'}{e_0}{t}
+  }{
+    \StackDecompose{(\Phi,s)}{\Residue{a_r}{l}{e}}{\mathcal{E}'}{e_0}{t}
+  }
+\end{mathpar}
+\begin{mathpar}
+  \inferrule[D-Residue-E]{
+    \Value{v} \\ \Bump{(a,l_a)}{(a_r,l)}=(a',l_a')
+  }{
+    \StackDecompose{(\Phi,s)}{\Residue{a_r}{l}{v}}{\mathcal{E}}
+      {\Residue{a_r}{l}{v}}{(\ActSkip,l_a')}
+  }
+\end{mathpar}
 
 With \(\StripResidues{e}\) erasing residues while keeping filters,
 the mechanization proves
 \[
- \StackDecompose{s}{e}{\mathcal{E}'}{e_0}{t}
+ \StackDecompose{(\Phi,s)}{e}{\mathcal{E}'}{e_0}{t}
  \quad\Longrightarrow\quad
  \StripResidues{\Plug{\mathcal{E}'}{e_0}}
  =\StripResidues{\Plug{\mathcal{E}}{e}},
@@ -417,7 +508,7 @@ Both are defined in Appendix~\ref{sec:standard_rules}.
   }
 \end{mathpar}
 
-\subsubsection{Stepping judgment.} With all the pieces in place, the
+\subsubsection{Stepping.} With all the pieces in place, the
 top-level stepping judgment ties decomposition, transition, and
 composition together. \textsc{S-Step} fires when decomposition yields
 a candidate with action \(\ActStep\) and \emph{no} candidate has
@@ -432,8 +523,8 @@ enclosing expressions to match newly applicable filters.
 \begin{mathpar}
   \inferrule[S-Step]{
     \StackDecompose{\TopState}{e}{\mathcal{E}_0}{e_0}{(\ActStep,l)} \\
-    \neg\exists\mathcal{E}_1,e_1,l_1.\;
-      \StackDecompose{\TopState}{e}{\mathcal{E}_1}{e_1}{(\ActSkip,l_1)} \\
+    \neg\bigl(\exists\mathcal{E}_1,e_1,l_1.\;
+    \StackDecompose{\TopState}{e}{\mathcal{E}_1}{e_1}{(\ActSkip,l_1)}\bigr) \\
     \Transition{e_0}{e_t} \\
     \Compose{e'}{\mathcal{E}_0}{e_t}
   }{
