@@ -35,10 +35,9 @@ implementations and comparing the results.
 \subsection{Hazel Integration}\label{sec:impl-hazel}
 
 Hazel internally uses a big-step, environment-based evaluator for
-performance: it avoids redundant substitutions and enables tail-call
-optimization. However, because the course teaches substitution-based
-equational semantics, the stepper must present traces as if
-substitution were performed eagerly.
+performance, avoiding redundant substitutions. However, because we 
+teach substitution-based equational semantics, the stepper must present 
+traces as if substitution were performed eagerly.
 
 To keep the two evaluation styles consistent, the big-step evaluator
 and the small-step stepper share a common transition relation: each
