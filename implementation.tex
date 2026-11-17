@@ -16,6 +16,8 @@ The core is roughly 560 lines of OCaml, structured as a direct
 transliteration of the formal judgments: expressions and patterns are
 algebraic data types, actions and gas are simple sums, and filter and
 residue expressions are constructors of the expression type.
+We used an AI coding assistant to help implement the stack-based OCaml
+reference stepper.
 
 A single stepping function decomposes the expression as described in
 Section~\ref{sec:dynamics}, enumerating every candidate redex with its
