@@ -68,18 +68,18 @@ rather than user-visible reductions.
 
 \subsection{Performance}\label{sec:impl-perf}
 
-The stack-based traversal consults filters in scope as it discovers
-redexes. Each lookup creates at most one residue, for its first
-persistent match; one-shot matches allocate no residues. The residue
-level cuts off filters whose actions are already covered along the
-current path. Reading an existing residue also discards it from the
-candidate context when an enclosing residue already covers its level.
-
-The mechanized bounds in Theorem~\ref{thm:residue-bounds} make this
-structural guarantee precise. Along one candidate path, newly inserted
-residue levels strictly increase and are bounded by the filter stack
-depth. Reconstructing an individual candidate adds at most one
-residue per filter occurrence in the input expression.
+Decomposition is nondeterministic and may identify multiple candidate
+redexes. Along the path to each candidate redex, each lookup scans the
+filters in scope from higher to lower levels. The residue level \(l_r\)
+starts at zero and records the highest level of residues already retained
+or inserted along that path. One-shot filters insert no residues, while
+persistent filters create at most one residue in a single lookup. At the
+first matching persistent filter whose level exceeds \(l_r\), lookup
+inserts a residue, updates \(l_r\) to the filter's level, and returns.
+Successive insertions along the path therefore have strictly increasing
+levels, each corresponding to a position in the filter stack. Thus, for
+each candidate redex, the number of residues inserted by the calculus is
+bounded by the filter stack depth.
 
 %%% Local Variables:
 %%% mode: LaTeX

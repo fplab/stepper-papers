@@ -752,37 +752,11 @@ these counts in the statement, since the corollary we care about, that
 the stepper does not invent reductions, follows from the existence of
 any such derivation.
 
-\paragraph*{Residue invariants and bounds.}
-Decomposition never visits a binder body. Starting from a program with
-no residues, every reachable residue names an in-scope persistent filter at
-the same level with the same action; no residue
-occurs beneath a lambda or fixpoint binder. This invariant is preserved
-by decomposition, transitions, and filtered steps.
-
-\begin{theorem}[Residue Bounds]\label{thm:residue-bounds}
- In a decomposition from \(\TopState\), newly inserted residue
- levels strictly increase along the path to the redex and are
- bounded by the number of filters in scope there. The levels of
- all residues retained or inserted along that path also strictly
- increase. If \(N_\delta(e)\) and \(N_\phi(e)\) count residues and
- filters in an expression, respectively, then
- \[
-  \StackDecompose{\TopState}{e}{\mathcal{E}}{e_0}{t}
-  \quad\Longrightarrow\quad
-  N_\delta(\Plug{\mathcal{E}}{e_0})
-  \leq N_\delta(e)+N_\phi(e).
- \]
-\end{theorem}
-For states reachable from source programs, the invariant additionally
-bounds retained residue levels by the filter stack depth, so each
-returned path contains at most one residue per filter in scope. These
-bounds concern an individual candidate context before transition.
-
 \subsection{Agda Mechanization}
 
 We mechanize the dynamic and static semantics of the calculus,
-together with proofs of preservation, progress, simulation, and the
-residue bounds as stated above. We use de Bruijn indices for
+together with proofs of preservation, progress, and simulation.
+We use de Bruijn indices for
 expressions and patterns to handle \(\alpha\)-equivalence during
 filter matching. We fuse substitution with removal of the substituted
 binder, avoiding a separate downward-shift operation.
